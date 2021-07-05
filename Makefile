@@ -14,10 +14,14 @@ SRC :=                                                                     \
 usb.cpp                                                                    \
 ep0.cpp                                                                    \
 usb_impl.cpp                                                               \
-endpoint_reg.cpp                                                           \
 def_ctrl_pipe.cpp                                                          \
 shared_memory.cpp                                                          \
-usb_tracer.cpp
+usb_tracer.cpp															   \
+device_state.cpp														   \
+usb_interrupts.cpp														   \
+drivers/stm32f1xx_interrupts.cpp										   \
+drivers/stm32f1xx_memory.cpp											   \
+drivers/stm32f1xx_peripheral.cpp
 
 ifeq ("$(VERBOSE)","1")
 Q := 

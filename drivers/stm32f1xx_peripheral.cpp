@@ -1,31 +1,4 @@
-/***************************************************************************
- *   Copyright (C) 2011 by Terraneo Federico                               *
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- *   This program is distributed in the hope that it will be useful,       *
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
- *   GNU General Public License for more details.                          *
- *                                                                         *
- *   As a special exception, if other files instantiate templates or use   *
- *   macros or inline functions from this file, or you compile this file   *
- *   and link it with other works to produce a work based on this file,    *
- *   this file does not by itself cause the resulting work to be covered   *
- *   by the GNU General Public License. However the source code for this   *
- *   file must still be made available in accordance with the GNU General  *
- *   Public License. This exception does not invalidate any other reasons  *
- *   why a work based on this file might be covered by the GNU General     *
- *   Public License.                                                       *
- *                                                                         *
- *   You should have received a copy of the GNU General Public License     *
- *   along with this program; if not, see <http://www.gnu.org/licenses/>   *
- ***************************************************************************/
-
-#include "endpoint_reg.h"
+#include "stm32f1xx_peripheral.h"
 
 namespace mxusb {
 
@@ -73,48 +46,48 @@ void EndpointRegister::IRQsetRxStatus(Status status)
 void EndpointRegister::IRQsetTxBuffer(shmem_ptr addr, unsigned short size)
 {
     int ep=EPR & USB_EP0R_EA;
-    SharedMemory::shortAt(SharedMemory::BTABLE_ADDR+8*ep+0)=addr & 0xfffe;
-    SharedMemory::shortAt(SharedMemory::BTABLE_ADDR+8*ep+2)=size;
+    SharedMemory::instance().shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+0)=addr & 0xfffe;
+    SharedMemory::instance().shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+2)=size;
 }
 
 void EndpointRegister::IRQsetTxBuffer1(shmem_ptr addr, unsigned short size)
 {
     int ep=EPR & USB_EP0R_EA;
-    SharedMemory::shortAt(SharedMemory::BTABLE_ADDR+8*ep+4)=addr & 0xfffe;
-    SharedMemory::shortAt(SharedMemory::BTABLE_ADDR+8*ep+6)=size;
+    SharedMemory::instance().shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+4)=addr & 0xfffe;
+    SharedMemory::instance().shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+6)=size;
 }
 
 void EndpointRegister::IRQsetRxBuffer(shmem_ptr addr, unsigned short size)
 {
     int ep=EPR & USB_EP0R_EA;
-    SharedMemory::shortAt(SharedMemory::BTABLE_ADDR+8*ep+4)=addr & 0xfffe;
+    SharedMemory::instance().shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+4)=addr & 0xfffe;
     if(size>62)
     {
         size/=32;
         size--;
         size<<=10;
         size|=0x8000; //BL_SIZE=1
-        SharedMemory::shortAt(SharedMemory::BTABLE_ADDR+8*ep+6)=size;
+        SharedMemory::instance().shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+6)=size;
     } else {
         size<<=10;
-        SharedMemory::shortAt(SharedMemory::BTABLE_ADDR+8*ep+6)=size;
+        SharedMemory::instance().shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+6)=size;
     }
 }
 
 void EndpointRegister::IRQsetRxBuffer0(shmem_ptr addr, unsigned short size)
 {
     int ep=EPR & USB_EP0R_EA;
-    SharedMemory::shortAt(SharedMemory::BTABLE_ADDR+8*ep+0)=addr & 0xfffe;
+    SharedMemory::instance().shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+0)=addr & 0xfffe;
     if(size>62)
     {
         size/=32;
         size--;
         size<<=10;
         size|=0x8000; //BL_SIZE=1
-        SharedMemory::shortAt(SharedMemory::BTABLE_ADDR+8*ep+2)=size;
+        SharedMemory::instance().shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+2)=size;
     } else {
         size<<=10;
-        SharedMemory::shortAt(SharedMemory::BTABLE_ADDR+8*ep+2)=size;
+        SharedMemory::instance().shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+2)=size;
     }
 }
 

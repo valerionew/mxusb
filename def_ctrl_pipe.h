@@ -32,7 +32,9 @@
 
 #include "usb.h"
 #include "ep0.h"
-#include "stm32_usb_regs.h"
+//#include "stm32_usb_regs.h"
+//FIXME: include should be implementation independent
+#include "drivers/stm32f1xx_peripheral.h"
 
 #ifndef ENDPOINT_ZERO_H
 #define	ENDPOINT_ZERO_H
@@ -115,8 +117,10 @@ public:
      */
     static void IRQstatusNak()
     {
-        USB->endpoint[0].IRQsetTxStatus(EndpointRegister::NAK);
-        USB->endpoint[0].IRQsetRxStatus(EndpointRegister::NAK);
+        //USB->endpoint[0].IRQsetTxStatus(EndpointRegister::NAK);
+        USBperipheral::getEndpoint(0).IRQsetTxStatus(EndpointRegister::NAK);
+        //USB->endpoint[0].IRQsetRxStatus(EndpointRegister::NAK);
+        USBperipheral::getEndpoint(0).IRQsetRxStatus(EndpointRegister::NAK);
         txUntouchedFlag=true;
         rxUntouchedFlag=true;
     }

@@ -1,45 +1,15 @@
-/***************************************************************************
- *   Copyright (C) 2011 by Terraneo Federico                               *
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- *   This program is distributed in the hope that it will be useful,       *
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
- *   GNU General Public License for more details.                          *
- *                                                                         *
- *   As a special exception, if other files instantiate templates or use   *
- *   macros or inline functions from this file, or you compile this file   *
- *   and link it with other works to produce a work based on this file,    *
- *   this file does not by itself cause the resulting work to be covered   *
- *   by the GNU General Public License. However the source code for this   *
- *   file must still be made available in accordance with the GNU General  *
- *   Public License. This exception does not invalidate any other reasons  *
- *   why a work based on this file might be covered by the GNU General     *
- *   Public License.                                                       *
- *                                                                         *
- *   You should have received a copy of the GNU General Public License     *
- *   along with this program; if not, see <http://www.gnu.org/licenses/>   *
- ***************************************************************************/
+#ifndef STM32F1XX_PERIPHERAL_H
+#define	STM32F1XX_PERIPHERAL_H
 
-#ifndef MXUSB_LIBRARY
-#error "This is header is private, it can be used only within mxusb."
-#error "If your code depends on a private header, it IS broken."
-#endif //MXUSB_LIBRARY
-
-#include "shared_memory.h"
+#include "drivers/stm32f1xx_memory.h"
 
 #ifdef _MIOSIX
 #include "interfaces/arch_registers.h"
+#include "interfaces/delays.h"
+using namespace miosix;
 #else //_MIOSIX
 #include "stm32f10x.h"
 #endif //_MIOSIX
-
-#ifndef ENDPOINT_H
-#define	ENDPOINT_H
 
 namespace mxusb {
 
@@ -143,7 +113,7 @@ public:
     void IRQsetTxDataSize(unsigned short size)
     {
         int ep=EPR & USB_EP0R_EA;
-        SharedMemory::shortAt(SharedMemory::BTABLE_ADDR+8*ep+2)=size;
+        SharedMemory::instance().shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+2)=size;
     }
 
     /**
@@ -164,7 +134,7 @@ public:
     void IRQsetTxDataSize1(unsigned short size)
     {
         int ep=EPR & USB_EP0R_EA;
-        SharedMemory::shortAt(SharedMemory::BTABLE_ADDR+8*ep+6)=size;
+        SharedMemory::instance().shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+6)=size;
     }
 
     /**
@@ -210,7 +180,7 @@ public:
     unsigned short IRQgetReceivedBytes() const
     {
         int ep=EPR & USB_EP0R_EA;
-        return SharedMemory::shortAt(SharedMemory::BTABLE_ADDR+8*ep+6) & 0x3ff;
+        return SharedMemory::instance().shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+6) & 0x3ff;
     }
 
     /**
@@ -221,7 +191,7 @@ public:
     unsigned short IRQgetReceivedBytes0() const
     {
         int ep=EPR & USB_EP0R_EA;
-        return SharedMemory::shortAt(SharedMemory::BTABLE_ADDR+8*ep+2) & 0x3ff;
+        return SharedMemory::instance().shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+2) & 0x3ff;
     }
 
     /**
@@ -347,6 +317,107 @@ private:
     volatile unsigned int EPR;
 };
 
+
+
+/// \internal
+/// Number of hardware endpoints of the stm32
+const int NUM_ENDPOINTS=8;
+
+/*
+ * \internal
+ * Can you believe it? stm32f10x.h despite being nearly 8000 lines long doesn't
+ * have the memory layout for the USB peripheral...
+ */
+struct USBmemoryLayout
+{
+    //These hardware registers are encapsulated in the Endpoint class
+    EndpointRegister endpoint[NUM_ENDPOINTS];
+    char reserved0[32];
+    volatile unsigned short CNTR;
+    short reserved1;
+    volatile unsigned short ISTR;
+    short reserved2;
+    volatile unsigned short FNR;
+    short reserved3;
+    volatile unsigned short DADDR;
+    short reserved4;
+    volatile unsigned short BTABLE;
+};
+
+/**
+ * \internal
+ * Pointer that maps the USBmemoryLayout to the peripheral address in memory
+ */
+USBmemoryLayout* const USB=reinterpret_cast<USBmemoryLayout*>(0x40005c00);
+
+
+/**
+ * \internal
+ * Hardware Abstraction Layer for the USB peripheral registers
+ */
+class USBperipheral
+{
+public:
+    static EndpointRegister& getEndpoint(unsigned char epNum)
+    {
+        // TODO: check epNum bounds
+        return USB->endpoint[epNum];
+    }
+
+    static void setEndpoint(int epNum)
+    {
+        // TODO: check epNum bounds
+        USB->endpoint[epNum] = epNum;
+    }
+
+    static void setAddress(unsigned short addr)
+    {
+        USB->DADDR = addr;
+    }
+
+    static bool enable()
+    {
+        //Enable clock to USB peripheral
+        #if __CM3_CMSIS_VERSION >= 0x010030 //CMSIS 1.3 changed variable names
+        const int clock=SystemCoreClock;
+        #else //__CM3_CMSIS_VERSION
+        const int clock=SystemFrequency;
+        #endif //__CM3_CMSIS_VERSION
+        if(clock==72000000)
+            RCC->CFGR &= ~RCC_CFGR_USBPRE; //Prescaler=1.5 (72MHz/1.5=48MHz)
+        else if(clock==48000000)
+            RCC->CFGR |= RCC_CFGR_USBPRE;  //Prescaler=1   (48MHz)
+        else {
+            //USB can't work with other clock frequencies
+            #ifndef _MIOSIX
+            __enable_irq();
+            #endif //_MIOSIX
+            return false;
+        }
+        RCC->APB1ENR |= RCC_APB1ENR_USBEN;
+        return true;
+    }
+
+    static void reset()
+    {
+        USB->CNTR=USB_CNTR_FRES; //Clear PDWN, leave FRES asserted
+        delayUs(1);  //Wait till USB analog circuitry stabilizes
+        USB->CNTR=0; //Clear FRES too, USB peripheral active
+        USB->ISTR=0; //Clear interrupt flags
+        
+        //First thing the host does is reset, so wait for that interrupt only
+        USB->CNTR=USB_CNTR_RESETM;
+    }
+
+    static void disable()
+    {
+        USB->DADDR=0;  //Clear EF bit
+        USB->CNTR=USB_CNTR_PDWN | USB_CNTR_FRES;
+        USB->ISTR=0; //Clear interrupt flags
+        RCC->APB1ENR &= ~RCC_APB1ENR_USBEN;
+    }
+};
+
 } //namespace mxusb
 
-#endif //ENDPOINT_H
+#endif //STM32F1XX_PERIPHERAL_H
