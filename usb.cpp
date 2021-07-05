@@ -28,14 +28,16 @@
 #include "usb.h"
 //#include "stm32_usb_regs.h"
 //FIXME: include should be implementation independent
-#include "drivers/stm32f1xx_peripheral.h"
+#include "drivers/stm32f1xx/stm32f1xx_peripheral.h"
+#include "drivers/stm32f4xx/stm32f4xx_peripheral.h"
 #include "shared_memory.h"
 #include "def_ctrl_pipe.h"
 #include "usb_tracer.h"
 #include "usb_impl.h"
 //#include <config/usb_gpio.h>
 //FIXME: include should be implementation independent
-#include "drivers/stm32f1xx_gpio.h"
+#include "drivers/stm32f1xx/stm32f1xx_gpio.h"
+#include "drivers/stm32f4xx/stm32f4xx_gpio.h"
 #include <config/usb_config.h>
 #include <algorithm>
 

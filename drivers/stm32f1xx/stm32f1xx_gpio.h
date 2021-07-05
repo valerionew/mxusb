@@ -1,6 +1,8 @@
 #ifndef STM32F1XX_GPIO_H
 #define	STM32F1XX_GPIO_H
 
+#ifdef _BOARD_STM32F103C8_BREAKOUT
+
 #define USB_GPIO_VERSION 100
 
 #ifdef _MIOSIX
@@ -73,5 +75,7 @@ public:
 };
 
 } //namespace mxusb
+
+#endif //_BOARD_STM32F103C8_BREAKOUT
 
 #endif //STM32F1XX_GPIO_H

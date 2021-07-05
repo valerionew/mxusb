@@ -36,6 +36,8 @@
 #ifndef STM32F1XX_MEMORY_H
 #define	STM32F1XX_MEMORY_H
 
+#ifdef _BOARD_STM32F103C8_BREAKOUT
+
 namespace mxusb {
 
 ///\internal
@@ -169,4 +171,6 @@ private:
 
 } //namespace mxusb
 
-#endif //SHARED_MEMORY_H
+#endif //_BOARD_STM32F103C8_BREAKOUT
+
+#endif //STM32F1XX_MEMORY_H

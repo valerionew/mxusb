@@ -28,6 +28,8 @@
 #include "stm32f1xx_memory.h"
 #include "usb_util.h"
 
+#ifdef _BOARD_STM32F103C8_BREAKOUT
+
 namespace mxusb {
 
 //
@@ -116,3 +118,5 @@ const shmem_ptr SharedMemoryImpl::getEP0RxAddr()
 shmem_ptr SharedMemoryImpl::currentEnd=DYNAMIC_AREA;
 
 } //namespace mxusb
+
+#endif //_BOARD_STM32F103C8_BREAKOUT

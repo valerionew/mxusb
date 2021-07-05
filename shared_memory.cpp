@@ -28,7 +28,8 @@
 #include "shared_memory.h"
 #include "usb_util.h"
 
-#include "drivers/stm32f1xx_memory.h"
+#include "drivers/stm32f1xx/stm32f1xx_memory.h"
+#include "drivers/stm32f4xx/stm32f4xx_memory.h"
 
 namespace mxusb {
 

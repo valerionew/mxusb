@@ -34,7 +34,8 @@
 //#include "endpoint_reg.h"
 //#include "stm32_usb_regs.h"
 //FIXME: include should be implementation independent
-#include "drivers/stm32f1xx_peripheral.h"
+#include "drivers/stm32f1xx/stm32f1xx_peripheral.h"
+#include "drivers/stm32f4xx/stm32f4xx_peripheral.h"
 
 #include "device_state.h"
 

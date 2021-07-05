@@ -1,7 +1,7 @@
 #ifndef STM32F1XX_PERIPHERAL_H
 #define	STM32F1XX_PERIPHERAL_H
 
-#include "drivers/stm32f1xx_memory.h"
+#include "drivers/stm32f1xx/stm32f1xx_memory.h"
 
 #ifdef _MIOSIX
 #include "interfaces/arch_registers.h"
@@ -11,7 +11,13 @@ using namespace miosix;
 #include "stm32f10x.h"
 #endif //_MIOSIX
 
+#ifdef _BOARD_STM32F103C8_BREAKOUT
+
 namespace mxusb {
+
+/// \internal
+/// Number of hardware endpoints of the stm32
+const int NUM_ENDPOINTS=8;
 
 /**
  * \internal
@@ -60,10 +66,7 @@ public:
      * Get the way an endpoint answers IN transactions (device to host)
      * \return status DISABLED/STALL/NAK/VALID
      */
-    Status IRQgetTxStatus() const
-    {
-        return static_cast<EndpointRegister::Status>((EPR>>4) & 0x3);
-    }
+    Status IRQgetTxStatus() const;
 
     /**
      * Set the way an endpoint answers OUT transactions (host to device)
@@ -75,10 +78,7 @@ public:
      * Get the way an endpoint answers OUT transactions (host to device)
      * \return status DISABLED/STALL/NAK/VALID
      */
-    Status IRQgetRxStatus() const
-    {
-        return static_cast<EndpointRegister::Status>((EPR>>12) & 0x3);
-    }
+    Status IRQgetRxStatus() const;
 
     /**
      * Set tx buffer for an endpoint. It is used for IN transactions
@@ -93,10 +93,7 @@ public:
      * \param addr address of buffer, as returned by SharedMemory::allocate()
      * \param size buffer size. Size must be divisible by 2
      */
-    void IRQsetTxBuffer0(shmem_ptr addr, unsigned short size)
-    {
-        IRQsetTxBuffer(addr,size);
-    }
+    void IRQsetTxBuffer0(shmem_ptr addr, unsigned short size);
 
     /**
      * Set alternate tx buffer 1 for an endpoint.
@@ -110,32 +107,21 @@ public:
      * Set size of buffer to be transmitted
      * \param size buffer size
      */
-    void IRQsetTxDataSize(unsigned short size)
-    {
-        int ep=EPR & USB_EP0R_EA;
-        SharedMemory::instance().shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+2)=size;
-    }
+    void IRQsetTxDataSize(unsigned short size);
 
     /**
      * Set size of alternate tx buffer 0 to be transmitted.
      * It is used for double buffered BULK IN endpoints.
      * \param size buffer size
      */
-    void IRQsetTxDataSize0(unsigned short size)
-    {
-        IRQsetTxDataSize(size);
-    }
+    void IRQsetTxDataSize0(unsigned short size);
 
     /**
      * Set size of alternate tx buffer 1 to be transmitted.
      * It is used for double buffered BULK IN endpoints.
      * \param size buffer size
      */
-    void IRQsetTxDataSize1(unsigned short size)
-    {
-        int ep=EPR & USB_EP0R_EA;
-        SharedMemory::instance().shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+6)=size;
-    }
+    void IRQsetTxDataSize1(unsigned short size);
 
     /**
      * Set rx buffer for an endpoint. It is used for OUT transactions
@@ -167,72 +153,38 @@ public:
      * - if size is less or equal 62 bytes, it must be divisible by 2
      * - if size is more than 62 bytes, it must be a multiple of 32
      */
-    void IRQsetRxBuffer1(shmem_ptr addr, unsigned short size)
-    {
-        IRQsetRxBuffer(addr,size);
-    }
+    void IRQsetRxBuffer1(shmem_ptr addr, unsigned short size);
 
     /**
      * When servicing an OUT transaction, get the number of bytes that the
      * host PC sent.
      * \return the number of bytes received
      */
-    unsigned short IRQgetReceivedBytes() const
-    {
-        int ep=EPR & USB_EP0R_EA;
-        return SharedMemory::instance().shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+6) & 0x3ff;
-    }
+    unsigned short IRQgetReceivedBytes() const;
 
     /**
      * When servicing an OUT transaction on a double buffered BULK endpoint,
      * get the number of bytes that the host PC sent on buffer 0.
      * \return the number of bytes received
      */
-    unsigned short IRQgetReceivedBytes0() const
-    {
-        int ep=EPR & USB_EP0R_EA;
-        return SharedMemory::instance().shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+2) & 0x3ff;
-    }
+    unsigned short IRQgetReceivedBytes0() const;
 
     /**
      * When servicing an OUT transaction on a double buffered BULK endpoint,
      * get the number of bytes that the host PC sent on buffer 1.
      * \return the number of bytes received
      */
-    unsigned short IRQgetReceivedBytes1() const
-    {
-        return IRQgetReceivedBytes();
-    }
+    unsigned short IRQgetReceivedBytes1() const;
 
     /**
      * Clear the CTR_TX bit.
      */
-    void IRQclearTxInterruptFlag()
-    {
-        unsigned short reg=EPR;
-        //Clear all toggle bits, so not to toggle any of them.
-        //Additionally, clear CTR_TX
-        reg &= ~(USB_EP0R_DTOG_RX | USB_EP0R_DTOG_TX | USB_EP0R_STAT_RX |
-               USB_EP0R_STAT_TX | USB_EP0R_CTR_TX);
-        //Explicitly set CTR_RX to avoid clearing it due to the read-modify-write op
-        reg |= USB_EP0R_CTR_RX;
-        EPR=reg;
-    }
+    void IRQclearTxInterruptFlag();
 
     /**
      * Clear the CTR_RX bit.
      */
-    void IRQclearRxInterruptFlag()
-    {
-        unsigned short reg=EPR;
-        //Clear all toggle bits, so not to toggle any of them.
-        //Additionally, clear CTR_RX
-        reg &= ~(USB_EP0R_DTOG_RX | USB_EP0R_DTOG_TX | USB_EP0R_STAT_RX |
-               USB_EP0R_STAT_TX | USB_EP0R_CTR_RX);
-        //Explicitly set CTR_TX to avoid clearing it due to the read-modify-write op
-        reg |= USB_EP0R_CTR_TX;
-        EPR=reg;
-    }
+    void IRQclearRxInterruptFlag();
 
     /**
      * Set the EP_KIND bit.
@@ -253,20 +205,12 @@ public:
     /**
      * Optimized version of setDtogTx that toggles the bit
      */
-    void IRQtoggleDtogTx()
-    {
-        unsigned short reg=EPR;
-        //Clear all toggle bits except DTOG_TX, since we need to toggle it
-        reg &= ~(USB_EP0R_DTOG_RX | USB_EP0R_STAT_RX | USB_EP0R_STAT_TX);
-        //Avoid clearing an interrupt flag because of a read-modify-write
-        reg |= USB_EP0R_CTR_RX | USB_EP0R_CTR_TX | USB_EP0R_DTOG_TX;
-        EPR=reg;
-    }
+    void IRQtoggleDtogTx();
 
     /**
      * \return true if DTOG_TX is set
      */
-    bool IRQgetDtogTx() const { return (EPR & USB_EP0R_DTOG_TX)!=0; }
+    bool IRQgetDtogTx() const;
 
     /**
      * Set the DTOG_RX bit.
@@ -277,20 +221,12 @@ public:
     /**
      * Optimized version of setDtogRx that toggles the bit
      */
-    void IRQtoggleDtogRx()
-    {
-        unsigned short reg=EPR;
-        //Clear all toggle bits except DTOG_RX, since we need to toggle it
-        reg &= ~(USB_EP0R_DTOG_TX | USB_EP0R_STAT_RX | USB_EP0R_STAT_TX);
-        //Avoid clearing an interrupt flag because of a read-modify-write
-        reg |= USB_EP0R_CTR_RX | USB_EP0R_CTR_TX | USB_EP0R_DTOG_RX;
-        EPR=reg;
-    }
+    void IRQtoggleDtogRx();
 
     /**
      * \return true if DTOG_RX is set
      */
-    bool IRQgetDtogRx() const { return (EPR & USB_EP0R_DTOG_RX)!=0; }
+    bool IRQgetDtogRx() const;
 
     /**
      * Allows to assign a value to the hardware register.
@@ -319,10 +255,6 @@ private:
 
 
 
-/// \internal
-/// Number of hardware endpoints of the stm32
-const int NUM_ENDPOINTS=8;
-
 /*
  * \internal
  * Can you believe it? stm32f10x.h despite being nearly 8000 lines long doesn't
@@ -349,6 +281,7 @@ struct USBmemoryLayout
  * Pointer that maps the USBmemoryLayout to the peripheral address in memory
  */
 USBmemoryLayout* const USB=reinterpret_cast<USBmemoryLayout*>(0x40005c00);
+
 
 
 /**
@@ -419,5 +352,7 @@ public:
 };
 
 } //namespace mxusb
+
+#endif //_BOARD_STM32F103C8_BREAKOUT
 
 #endif //STM32F1XX_PERIPHERAL_H

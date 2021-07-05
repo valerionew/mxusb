@@ -1,5 +1,7 @@
 #include "stm32f1xx_peripheral.h"
 
+#ifdef _BOARD_STM32F103C8_BREAKOUT
+
 namespace mxusb {
 
 //
@@ -31,6 +33,11 @@ void EndpointRegister::IRQsetTxStatus(Status status)
     EPR=reg;
 }
 
+EndpointRegister::Status EndpointRegister::IRQgetTxStatus() const
+{
+    return static_cast<EndpointRegister::Status>((EPR>>4) & 0x3);
+}
+
 void EndpointRegister::IRQsetRxStatus(Status status)
 {
     unsigned short reg=EPR;
@@ -43,6 +50,11 @@ void EndpointRegister::IRQsetRxStatus(Status status)
     EPR=reg;
 }
 
+EndpointRegister::Status EndpointRegister::IRQgetRxStatus() const
+{
+    return static_cast<EndpointRegister::Status>((EPR>>12) & 0x3);
+}
+
 void EndpointRegister::IRQsetTxBuffer(shmem_ptr addr, unsigned short size)
 {
     int ep=EPR & USB_EP0R_EA;
@@ -50,10 +62,32 @@ void EndpointRegister::IRQsetTxBuffer(shmem_ptr addr, unsigned short size)
     SharedMemory::instance().shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+2)=size;
 }
 
+void EndpointRegister::IRQsetTxBuffer0(shmem_ptr addr, unsigned short size)
+{
+    IRQsetTxBuffer(addr,size);
+}
+
 void EndpointRegister::IRQsetTxBuffer1(shmem_ptr addr, unsigned short size)
 {
     int ep=EPR & USB_EP0R_EA;
     SharedMemory::instance().shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+4)=addr & 0xfffe;
+    SharedMemory::instance().shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+6)=size;
+}
+
+void EndpointRegister::IRQsetTxDataSize(unsigned short size)
+{
+    int ep=EPR & USB_EP0R_EA;
+    SharedMemory::instance().shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+2)=size;
+}
+
+void EndpointRegister::IRQsetTxDataSize0(unsigned short size)
+{
+    IRQsetTxDataSize(size);
+}
+
+void EndpointRegister::IRQsetTxDataSize1(unsigned short size)
+{
+    int ep=EPR & USB_EP0R_EA;
     SharedMemory::instance().shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+6)=size;
 }
 
@@ -91,6 +125,52 @@ void EndpointRegister::IRQsetRxBuffer0(shmem_ptr addr, unsigned short size)
     }
 }
 
+void EndpointRegister::IRQsetRxBuffer1(shmem_ptr addr, unsigned short size)
+{
+    IRQsetRxBuffer(addr,size);
+}
+
+unsigned short EndpointRegister::IRQgetReceivedBytes() const
+{
+    int ep=EPR & USB_EP0R_EA;
+    return SharedMemory::instance().shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+6) & 0x3ff;
+}
+
+unsigned short EndpointRegister::IRQgetReceivedBytes0() const
+{
+    int ep=EPR & USB_EP0R_EA;
+    return SharedMemory::instance().shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+2) & 0x3ff;
+}
+
+unsigned short EndpointRegister::IRQgetReceivedBytes1() const
+{
+    return IRQgetReceivedBytes();
+}
+
+void EndpointRegister::IRQclearTxInterruptFlag()
+{
+    unsigned short reg=EPR;
+    //Clear all toggle bits, so not to toggle any of them.
+    //Additionally, clear CTR_TX
+    reg &= ~(USB_EP0R_DTOG_RX | USB_EP0R_DTOG_TX | USB_EP0R_STAT_RX |
+            USB_EP0R_STAT_TX | USB_EP0R_CTR_TX);
+    //Explicitly set CTR_RX to avoid clearing it due to the read-modify-write op
+    reg |= USB_EP0R_CTR_RX;
+    EPR=reg;
+}
+
+void EndpointRegister::IRQclearRxInterruptFlag()
+{
+    unsigned short reg=EPR;
+    //Clear all toggle bits, so not to toggle any of them.
+    //Additionally, clear CTR_RX
+    reg &= ~(USB_EP0R_DTOG_RX | USB_EP0R_DTOG_TX | USB_EP0R_STAT_RX |
+            USB_EP0R_STAT_TX | USB_EP0R_CTR_RX);
+    //Explicitly set CTR_TX to avoid clearing it due to the read-modify-write op
+    reg |= USB_EP0R_CTR_TX;
+    EPR=reg;
+}
+
 void EndpointRegister::IRQsetEpKind()
 {
     unsigned short reg=EPR;
@@ -126,6 +206,21 @@ void EndpointRegister::IRQsetDtogTx(bool value)
     EPR=reg;
 }
 
+void EndpointRegister::IRQtoggleDtogTx()
+{
+    unsigned short reg=EPR;
+    //Clear all toggle bits except DTOG_TX, since we need to toggle it
+    reg &= ~(USB_EP0R_DTOG_RX | USB_EP0R_STAT_RX | USB_EP0R_STAT_TX);
+    //Avoid clearing an interrupt flag because of a read-modify-write
+    reg |= USB_EP0R_CTR_RX | USB_EP0R_CTR_TX | USB_EP0R_DTOG_TX;
+    EPR=reg;
+}
+
+bool EndpointRegister::IRQgetDtogTx() const
+{
+    return (EPR & USB_EP0R_DTOG_TX)!=0;
+}
+
 void EndpointRegister::IRQsetDtogRx(bool value)
 {
     unsigned short reg=EPR;
@@ -137,4 +232,21 @@ void EndpointRegister::IRQsetDtogRx(bool value)
     EPR=reg;
 }
 
+void EndpointRegister::IRQtoggleDtogRx()
+{
+    unsigned short reg=EPR;
+    //Clear all toggle bits except DTOG_RX, since we need to toggle it
+    reg &= ~(USB_EP0R_DTOG_TX | USB_EP0R_STAT_RX | USB_EP0R_STAT_TX);
+    //Avoid clearing an interrupt flag because of a read-modify-write
+    reg |= USB_EP0R_CTR_RX | USB_EP0R_CTR_TX | USB_EP0R_DTOG_RX;
+    EPR=reg;
+}
+
+bool EndpointRegister::IRQgetDtogRx() const
+{
+    return (EPR & USB_EP0R_DTOG_RX)!=0;
+}
+
 } //namespace mxusb
+
+#endif //_BOARD_STM32F103C8_BREAKOUT

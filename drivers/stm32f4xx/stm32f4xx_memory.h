@@ -30,10 +30,13 @@
 #error "If your code depends on a private header, it IS broken."
 #endif //MXUSB_LIBRARY
 
-//#include <config/usb_config.h>
+#include <config/usb_config.h>
+#include "shared_memory.h"
 
-#ifndef SHARED_MEMORY_H
-#define	SHARED_MEMORY_H
+#ifndef STM32F4XX_MEMORY_H
+#define	STM32F4XX_MEMORY_H
+
+#ifdef _BOARD_STM32F4DISCOVERY
 
 namespace mxusb {
 
@@ -42,7 +45,7 @@ namespace mxusb {
 ///aligned to 32bit boundaries, leaving 2 bytes gaps.
 ///Because of that, even if the access is performed as a pointer to int,
 ///the upper two bytes always read as zero
-//unsigned int* const USB_RAM=reinterpret_cast<unsigned int*>(0x40006000);
+unsigned int* const USB_RAM=reinterpret_cast<unsigned int*>(0x40006000);
 
 /**
  * \inetrnal
@@ -50,9 +53,7 @@ namespace mxusb {
  * Its values can range from 0 to SharedMemory::END-1
  * The pointer is a pointer to char *, so it can address individual bytes
  */
-typedef unsigned short shmem_ptr;
-
-class SharedMemoryImpl;
+//typedef unsigned short shmem_ptr;
 
 /**
  * \internal
@@ -70,11 +71,26 @@ class SharedMemoryImpl;
  *   endpoints are created. This memory cannot be deallocated, and is freed only
  *   when the USB device is reset or when device configuration is changed.
  */
-class SharedMemory
+class SharedMemoryImpl
 {
 public:
 
-    static SharedMemory& instance();
+    /// Btable size. Must be 64 bytes to allow space for up to 8 endpoints
+    static const unsigned short BTABLE_SIZE=64;
+    /// Btable address. Must be 8bytes-aligned. Do not change
+    static const shmem_ptr BTABLE_ADDR=0;
+
+    /// Size of endpoint zero buffers (both tx and rx). Must be divisible by 2
+    static const unsigned short EP0_SIZE=mxusb::EP0_SIZE; //in usb_config.h
+    /// Address of tx buffer for endpoint zero (statically allocated)
+    static const shmem_ptr EP0TX_ADDR=BTABLE_ADDR+BTABLE_SIZE;
+    /// Address of rx buffer for endpoint zero (statically allocated)
+    static const shmem_ptr EP0RX_ADDR=EP0TX_ADDR+EP0_SIZE;
+
+    /// \internal base address of dynamic area
+    static const shmem_ptr DYNAMIC_AREA=EP0RX_ADDR+EP0_SIZE;
+    /// \internal address one past the last byte in the dynamic area
+    static const shmem_ptr END=512;
     
     /**
      * Allocate space for an endpoint
@@ -141,7 +157,7 @@ public:
      * is not allowed on a byte basis. To write into the shared memory, use
      * shortAt()
      */
-    const unsigned char charAt(shmem_ptr ptr);
+    static const unsigned char charAt(shmem_ptr ptr);
 
     const unsigned short getEP0Size();
 
@@ -150,14 +166,11 @@ public:
     const shmem_ptr getEP0RxAddr();
 
 private:
-    SharedMemory(const SharedMemory&);
-    SharedMemory& operator= (const SharedMemory&);
-
-    SharedMemory(SharedMemoryImpl *impl);
-
-    SharedMemoryImpl *pImpl;
+    static shmem_ptr currentEnd;/// Pointer to the first free byte
 };
 
 } //namespace mxusb
 
-#endif //SHARED_MEMORY_H
+#endif //_BOARD_STM32F4DISCOVERY
+
+#endif //STM32F4XX_MEMORY_H

@@ -1,12 +1,9 @@
 //#include "stm32_usb_regs.h"
 //FIXME: include should be implementation independent
-#include "drivers/stm32f1xx_peripheral.h"
+#include "drivers/stm32f1xx/stm32f1xx_peripheral.h"
 #include "def_ctrl_pipe.h"
 #include "usb_tracer.h"
 #include "usb_impl.h"
-//#include <config/usb_gpio.h>
-//FIXME: include should be implementation independent
-#include "drivers/stm32f1xx_gpio.h"
 #include <config/usb_config.h>
 
 #ifdef _MIOSIX
@@ -18,7 +15,9 @@ using namespace miosix;
 #include "libraries/system.h"
 #endif //_MIOSIX
 
-#include "drivers/stm32f1xx_memory.h"
+#include "drivers/stm32f1xx/stm32f1xx_memory.h"
+
+#ifdef _BOARD_STM32F103C8_BREAKOUT
 
 //
 // interrupt handler
@@ -184,3 +183,5 @@ void USBirqHpHandler()
 }
 
 } //namespace mxusb
+
+#endif //_BOARD_STM32F103C8_BREAKOUT
