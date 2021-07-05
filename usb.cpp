@@ -112,7 +112,7 @@ static void IRQhandleReset()
     USB->BTABLE=SharedMemory::BTABLE_ADDR; //Set BTABLE
 
     for(int i=1;i<NUM_ENDPOINTS;i++) EndpointImpl::get(i)->IRQdeconfigure(i);
-    SharedMemory::reset();
+    SharedMemory::instance().reset();
     DefCtrlPipe::IRQdefaultStatus();
 
     //After a reset device address is zero, enable transaction handling
@@ -390,7 +390,7 @@ bool Endpoint::IRQwrite(const unsigned char *data, int size, int& written)
         //INTERRUPT
         if(stat!=EndpointRegister::NAK) return true;//No error, just buffer full
         written=min<unsigned int>(size,pImpl->IRQgetSizeOfInBuf());
-        SharedMemory::copyBytesTo(pImpl->IRQgetInBuf(),data,written);
+        SharedMemory::instance().copyBytesTo(pImpl->IRQgetInBuf(),data,written);
         epr.IRQsetTxDataSize(written);
         epr.IRQsetTxStatus(EndpointRegister::VALID);
     } else {
@@ -414,11 +414,11 @@ bool Endpoint::IRQwrite(const unsigned char *data, int size, int& written)
         if(epr.IRQgetDtogRx()) //Actually, SW_BUF
         {
             written=min<unsigned int>(size,pImpl->IRQgetSizeOfBuf1());
-            SharedMemory::copyBytesTo(pImpl->IRQgetBuf1(),data,written);
+            SharedMemory::instance().copyBytesTo(pImpl->IRQgetBuf1(),data,written);
             epr.IRQsetTxDataSize1(written);
         } else {
             written=min<unsigned int>(size,pImpl->IRQgetSizeOfBuf0());
-            SharedMemory::copyBytesTo(pImpl->IRQgetBuf0(),data,written);
+            SharedMemory::instance().copyBytesTo(pImpl->IRQgetBuf0(),data,written);
             epr.IRQsetTxDataSize0(written);
         }
         epr.IRQtoggleDtogRx();
@@ -451,7 +451,7 @@ bool Endpoint::IRQread(unsigned char *data, int& readBytes)
         //INTERRUPT
         if(stat!=EndpointRegister::NAK) return true; //No errors, just no data
         readBytes=epr.IRQgetReceivedBytes();
-        SharedMemory::copyBytesFrom(data,pImpl->IRQgetOutBuf(),readBytes);
+        SharedMemory::instance().copyBytesFrom(data,pImpl->IRQgetOutBuf(),readBytes);
         epr.IRQsetRxStatus(EndpointRegister::VALID);
     } else {
         //BULK
@@ -460,10 +460,10 @@ bool Endpoint::IRQread(unsigned char *data, int& readBytes)
         if(epr.IRQgetDtogTx()) //Actually, SW_BUF
         {
             readBytes=epr.IRQgetReceivedBytes1();
-            SharedMemory::copyBytesFrom(data,pImpl->IRQgetBuf1(),readBytes);
+            SharedMemory::instance().copyBytesFrom(data,pImpl->IRQgetBuf1(),readBytes);
         } else {
             readBytes=epr.IRQgetReceivedBytes0();
-            SharedMemory::copyBytesFrom(data,pImpl->IRQgetBuf0(),readBytes);
+            SharedMemory::instance().copyBytesFrom(data,pImpl->IRQgetBuf0(),readBytes);
         }
         epr.IRQtoggleDtogTx();
     }
@@ -587,7 +587,7 @@ void USBdevice::disable()
 
     USBgpio::disablePullup();
     for(int i=1;i<NUM_ENDPOINTS;i++) EndpointImpl::get(i)->IRQdeconfigure(i);
-    SharedMemory::reset();
+    SharedMemory::instance().reset();
     USB->DADDR=0;  //Clear EF bit
     USB->CNTR=USB_CNTR_PDWN | USB_CNTR_FRES;
     USB->ISTR=0; //Clear interrupt flags

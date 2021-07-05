@@ -25,10 +25,8 @@
  *   along with this program; if not, see <http://www.gnu.org/licenses/>   *
  ***************************************************************************/
 
-#include "shared_memory.h"
+#include "stm32f1xx_memory.h"
 #include "usb_util.h"
-
-#include "drivers/stm32f1xx_memory.h"
 
 namespace mxusb {
 
@@ -36,60 +34,85 @@ namespace mxusb {
 // class SharedMemory
 //
 
-SharedMemory& SharedMemory::instance()
+shmem_ptr SharedMemoryImpl::allocate(unsigned short size)
 {
-    static SharedMemoryImpl implementation;
-    static SharedMemory singleton(&implementation);
-    return singleton;
+    if(size % 2 !=0) size++;
+    if(currentEnd+size>END) return 0;
+    unsigned short result=currentEnd;
+    currentEnd+=size;
+    return result;
 }
 
-shmem_ptr SharedMemory::allocate(unsigned short size)
+void SharedMemoryImpl::reset()
 {
-    return pImpl->allocate(size);
+    currentEnd=DYNAMIC_AREA;
 }
 
-void SharedMemory::reset()
-{
-    pImpl->reset();
-}
-
-void SharedMemory::copyBytesFrom(unsigned char *dest, shmem_ptr src,
+void SharedMemoryImpl::copyBytesFrom(unsigned char *dest, shmem_ptr src,
         unsigned short n)
 {
-    pImpl->copyBytesFrom(dest, src, n);
+    //Use optimized version if dest is two words aligned
+    if((reinterpret_cast<unsigned int>(dest) & 1)==0)
+    {
+        n=(n+1)/2;
+        unsigned short *dest2=reinterpret_cast<unsigned short*>(dest);
+        const unsigned int *src2=USB_RAM+(src/2);
+        for(int i=0;i<n;i++) dest2[i]=src2[i];
+        return;
+    }
+    //Use slow version if dest is not two words aligned
+    const unsigned char *src2=reinterpret_cast<unsigned char*>(USB_RAM+(src/2));
+    for(int i=0;i<n;i++)
+    {
+        *dest++=*src2++;
+        //Work around the quirk that memory is 2 byte
+        //of data separated by 2 bytes of gap
+        if((i & 1)==1) src2+=2;
+    }
 }
 
-void SharedMemory::copyBytesTo(shmem_ptr dest, const unsigned char *src,
+void SharedMemoryImpl::copyBytesTo(shmem_ptr dest, const unsigned char *src,
         unsigned short n)
 {
-    pImpl->copyBytesTo(dest, src, n);
+    //Use optimized version if dest is two words aligned
+    if((reinterpret_cast<unsigned int>(src) & 1)==0)
+    {
+        n=(n+1)/2;
+        const unsigned short *src2=reinterpret_cast<const unsigned short*>(src);
+        unsigned int *dest2=USB_RAM+(dest/2);
+        for(int i=0;i<n;i++) dest2[i]=src2[i];
+        return;
+    }
+    //Use slow version if dest is not two words aligned
+    n=(n+1) & ~1; //Rount to upper # divisible by two
+    for(int i=0;i<n;i+=2) shortAt(dest+i)=toShort(&src[i]);
 }
 
-unsigned int& SharedMemory::shortAt(shmem_ptr ptr)
+unsigned int& SharedMemoryImpl::shortAt(shmem_ptr ptr)
 {
-    return pImpl->shortAt(ptr);
+    return *(USB_RAM+(ptr>>1));
 }
 
-const unsigned char SharedMemory::charAt(shmem_ptr ptr)
+const unsigned char SharedMemoryImpl::charAt(shmem_ptr ptr)
 {
-    return pImpl->charAt(ptr);
+    return *(reinterpret_cast<unsigned char *>(USB_RAM+(ptr>>1))+(ptr & 1));
 }
 
-const unsigned short SharedMemory::getEP0Size()
+const unsigned short SharedMemoryImpl::getEP0Size()
 {
-    return pImpl->getEP0Size();
+    return SharedMemoryImpl::EP0_SIZE;
 }
 
-const shmem_ptr SharedMemory::getEP0TxAddr()
+const shmem_ptr SharedMemoryImpl::getEP0TxAddr()
 {
-    return pImpl->getEP0TxAddr();
+    return SharedMemoryImpl::EP0TX_ADDR;
 }
 
-const shmem_ptr SharedMemory::getEP0RxAddr()
+const shmem_ptr SharedMemoryImpl::getEP0RxAddr()
 {
-    return pImpl->getEP0RxAddr();
+    return SharedMemoryImpl::EP0RX_ADDR;
 }
 
-SharedMemory::SharedMemory(SharedMemoryImpl *impl) : pImpl(impl) {}
+shmem_ptr SharedMemoryImpl::currentEnd=DYNAMIC_AREA;
 
 } //namespace mxusb

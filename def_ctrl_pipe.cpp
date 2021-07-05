@@ -56,7 +56,8 @@ bool DefCtrlPipe::registerAndValidateDescriptors(const unsigned char *device,
     //Check device descriptor
     xassert(device[0]==18); //Device descriptor size is constant
     xassert(device[1]==Descriptor::DEVICE);
-    xassert(device[7]==SharedMemory::EP0_SIZE);
+    //xassert(device[7]==SharedMemoryImpl::EP0_SIZE);
+    xassert(device[7]==EP0_SIZE);
     const unsigned char numConfigs=device[17];
 
     //Check configuration descriptors
@@ -87,7 +88,8 @@ void DefCtrlPipe::IRQsetup()
 
     //Copy packet into setup struct
     unsigned char *packet=reinterpret_cast<unsigned char*>(&setup);
-    SharedMemory::copyBytesFrom(packet,SharedMemory::EP0RX_ADDR,sizeof(setup));
+    //SharedMemory::instance().copyBytesFrom(packet,SharedMemoryImpl::EP0RX_ADDR,sizeof(setup));
+    SharedMemory::instance().copyBytesFrom(packet,SharedMemory::instance().getEP0RxAddr(),sizeof(setup));
     Tracer::IRQtraceArray(Ut::EP0_VALID_SETUP,packet,sizeof(setup));
 
     if(controlState.state!=CTR_NO_REQ_PENDING)
@@ -259,8 +261,8 @@ void DefCtrlPipe::IRQdefaultStatus()
     EndpointRegister& epr=USB->endpoint[0];
     epr=0;
     epr.IRQsetType(EndpointRegister::CONTROL);
-    epr.IRQsetTxBuffer(SharedMemory::EP0TX_ADDR,SharedMemory::EP0_SIZE);
-    epr.IRQsetRxBuffer(SharedMemory::EP0RX_ADDR,SharedMemory::EP0_SIZE);
+    epr.IRQsetTxBuffer(SharedMemoryImpl::EP0TX_ADDR,SharedMemoryImpl::EP0_SIZE);
+    epr.IRQsetRxBuffer(SharedMemoryImpl::EP0RX_ADDR,SharedMemoryImpl::EP0_SIZE);
     USB->endpoint[0].IRQsetTxStatus(EndpointRegister::STALL);
     USB->endpoint[0].IRQsetRxStatus(EndpointRegister::STALL);
 }
@@ -418,7 +420,8 @@ void DefCtrlPipe::IRQstartInData(const unsigned char* data, unsigned short size)
     //there is the need to send that zero byte packet
     if(size>=EP0_SIZE)
     {
-        SharedMemory::copyBytesTo(SharedMemory::EP0TX_ADDR,data,EP0_SIZE);
+        //SharedMemory::instance().copyBytesTo(SharedMemoryImpl::EP0TX_ADDR,data,EP0_SIZE);
+        SharedMemory::instance().copyBytesTo(SharedMemory::instance().getEP0TxAddr(),data,EP0_SIZE);
         ep.IRQsetTxDataSize(EP0_SIZE);
         controlState.state=CTR_IN_IN_PROGRESS;
         //The cast is necessary because controlState.ptr is used both for
@@ -428,7 +431,8 @@ void DefCtrlPipe::IRQstartInData(const unsigned char* data, unsigned short size)
         controlState.size=size-EP0_SIZE;
         Tracer::IRQtrace(Ut::IN_BUF_FILL,0,EP0_SIZE);
     } else {
-        SharedMemory::copyBytesTo(SharedMemory::EP0TX_ADDR,data,size);
+        //SharedMemory::instance().copyBytesTo(SharedMemoryImpl::EP0TX_ADDR,data,size);
+        SharedMemory::instance().copyBytesTo(SharedMemory::instance().getEP0TxAddr(),data,size);
         ep.IRQsetTxDataSize(size);
         controlState.state=CTR_IN_STATUS_BEGIN;
         Tracer::IRQtrace(Ut::IN_BUF_FILL,0,size);
@@ -452,8 +456,8 @@ void DefCtrlPipe::IRQstartCustomOutData()
         return;
     }
 
-    SharedMemory::copyBytesFrom(controlState.ptr,SharedMemory::EP0RX_ADDR,
-            received);
+    //SharedMemory::instance().copyBytesFrom(controlState.ptr,SharedMemoryImpl::EP0RX_ADDR,received);
+    SharedMemory::instance().copyBytesFrom(controlState.ptr,SharedMemory::instance().getEP0RxAddr(),received);
     controlState.ptr+=received;
     controlState.size-=received;
     

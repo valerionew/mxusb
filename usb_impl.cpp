@@ -13,7 +13,7 @@ namespace mxusb {
 void EndpointImpl::IRQdeconfigureAll()
 {
     for(int i=1;i<NUM_ENDPOINTS;i++) EndpointImpl::get(i)->IRQdeconfigure(i);
-    SharedMemory::reset();
+    SharedMemory::instance().reset();
 }
 
 
@@ -103,7 +103,7 @@ void EndpointImpl::IRQconfigureInterruptEndpoint(const unsigned char *desc)
     const unsigned char addr=bEndpointAddress & 0xf;
     const unsigned short wMaxPacketSize=toShort(&desc[4]);
 
-    const shmem_ptr ptr=SharedMemory::allocate(wMaxPacketSize);
+    const shmem_ptr ptr=SharedMemory::instance().allocate(wMaxPacketSize);
     if(ptr==0 || wMaxPacketSize==0)
     {
         Tracer::IRQtrace(Ut::OUT_OF_SHMEM);
@@ -142,8 +142,8 @@ void EndpointImpl::IRQconfigureBulkEndpoint(const unsigned char *desc)
     const unsigned char addr=bEndpointAddress & 0xf;
     const unsigned short wMaxPacketSize=toShort(&desc[4]);
 
-    const shmem_ptr ptr0=SharedMemory::allocate(wMaxPacketSize);
-    const shmem_ptr ptr1=SharedMemory::allocate(wMaxPacketSize);
+    const shmem_ptr ptr0=SharedMemory::instance().allocate(wMaxPacketSize);
+    const shmem_ptr ptr1=SharedMemory::instance().allocate(wMaxPacketSize);
     if(ptr0==0 || ptr1==0 || wMaxPacketSize==0)
     {
         Tracer::IRQtrace(Ut::OUT_OF_SHMEM);
