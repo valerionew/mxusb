@@ -73,6 +73,10 @@ public:
      */
     static const int maxNumEndpoints();
 
+    static void deconfigureAll();
+    
+    static void configureAll(const unsigned char *desc);
+
     /**
      * \return true if IN side of the endpoint is enabled.
      * Before the host selects a configuration all endpoints are disabled.

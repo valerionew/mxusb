@@ -13,15 +13,15 @@ include $(CONFPATH)/config/Makefile.inc
 SRC :=                                                                     \
 usb.cpp                                                                    \
 ep0.cpp                                                                    \
-usb_impl.cpp                                                               \
 def_ctrl_pipe.cpp                                                          \
 shared_memory.cpp                                                          \
 usb_tracer.cpp															   \
 device_state.cpp														   \
-usb_interrupts.cpp														   \
+drivers/stm32f1xx/stm32f1xx_endpoint.cpp								   \
 drivers/stm32f1xx/stm32f1xx_interrupts.cpp								   \
 drivers/stm32f1xx/stm32f1xx_memory.cpp									   \
 drivers/stm32f1xx/stm32f1xx_peripheral.cpp								   \
+drivers/stm32f4xx/stm32f4xx_endpoint.cpp								   \
 drivers/stm32f4xx/stm32f4xx_interrupts.cpp								   \
 drivers/stm32f4xx/stm32f4xx_memory.cpp									   \
 drivers/stm32f4xx/stm32f4xx_peripheral.cpp

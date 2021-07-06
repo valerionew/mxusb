@@ -279,6 +279,15 @@ public:
         USB->DADDR = addr;
     }
 
+    static void configureInterrupts()
+    {
+        //Configure interrupts
+        NVIC_EnableIRQ(USB_HP_CAN1_TX_IRQn);
+        NVIC_SetPriority(USB_HP_CAN1_TX_IRQn,3);//Higher priority (Max=0, min=15)
+        NVIC_EnableIRQ(USB_LP_CAN1_RX0_IRQn);
+        NVIC_SetPriority(USB_LP_CAN1_RX0_IRQn,4);//High priority (Max=0, min=15)
+    }
+
     static bool enable()
     {
         //Enable clock to USB peripheral

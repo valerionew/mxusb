@@ -32,8 +32,8 @@
 #include "shared_memory.h"
 #include "usb_util.h"
 #include "usb_tracer.h"
-#include "usb_impl.h"
 #include "ep0.h"
+#include "device_state.h"
 
 using namespace std;
 
@@ -387,12 +387,14 @@ void DefCtrlPipe::IRQsetConfiguration()
     
     //In any case, deconfigure all endpoints except endpoint zero.
     //Then, if config!=0 reconfigure endpoints
-    EndpointImpl::IRQdeconfigureAll();
+    //EndpointImpl::IRQdeconfigureAll();
+    Endpoint::deconfigureAll();
     
     if(config!=0)
     {
         DeviceStateImpl::IRQsetConfiguration(config);
-        EndpointImpl::IRQconfigureAll(IRQgetConfigDesc(config));
+        //EndpointImpl::IRQconfigureAll(IRQgetConfigDesc(config));
+        Endpoint::configureAll(IRQgetConfigDesc(config));
         DeviceStateImpl::IRQsetState(USBdevice::CONFIGURED);
     } else {
         DeviceStateImpl::IRQsetConfiguration(0);

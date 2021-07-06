@@ -3,7 +3,8 @@
 #include "drivers/stm32f4xx/stm32f4xx_peripheral.h"
 #include "def_ctrl_pipe.h"
 #include "usb_tracer.h"
-#include "usb_impl.h"
+//FIXME: include should be implementation independent
+#include "drivers/stm32f4xx/stm32f4xx_endpoint.h"
 #include <config/usb_config.h>
 
 #ifdef _MIOSIX
@@ -22,6 +23,46 @@ using namespace miosix;
 //
 // interrupt handler
 //
+
+/**
+ * \internal
+ * Low priority interrupt, called for everything except double buffered
+ * bulk/isochronous correct transfers.
+ */
+extern void USB_LP_CAN1_RX0_IRQHandler() __attribute__((naked));
+void USB_LP_CAN1_RX0_IRQHandler()
+{
+    #ifdef _MIOSIX
+    //Since a context switch can happen within this interrupt handler, it is
+    //necessary to save and restore context
+    saveContext();
+    asm volatile("bl _ZN5mxusb15USBirqLpHandlerEv");
+    restoreContext();
+    #else //_MIOSIX
+    asm volatile("ldr r0, =_ZN5mxusb15USBirqLpHandlerEv\n\t"
+                 "bx  r0                               \n\t");
+    #endif //_MIOSIX
+}
+
+/**
+ * \internal
+ * High priority interrupt, called for a correct transfer on double bufferes
+ * bulk/isochronous endpoint.
+ */
+extern void USB_HP_CAN1_TX_IRQHandler() __attribute__((naked));
+void USB_HP_CAN1_TX_IRQHandler()
+{
+    #ifdef _MIOSIX
+    //Since a context switch can happen within this interrupt handler, it is
+    //necessary to save and restore context
+    saveContext();
+    asm volatile("bl _ZN5mxusb15USBirqHpHandlerEv");
+    restoreContext();
+    #else //_MIOSIX
+    asm volatile("ldr r0, =_ZN5mxusb15USBirqHpHandlerEv\n\t"
+                 "bx  r0                               \n\t");
+    #endif //_MIOSIX
+}
 
 namespace mxusb {
 

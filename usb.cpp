@@ -33,7 +33,9 @@
 #include "shared_memory.h"
 #include "def_ctrl_pipe.h"
 #include "usb_tracer.h"
-#include "usb_impl.h"
+//FIXME: include should be implementation independent
+#include "drivers/stm32f1xx/stm32f1xx_endpoint.h"
+#include "drivers/stm32f4xx/stm32f4xx_endpoint.h"
 //#include <config/usb_gpio.h>
 //FIXME: include should be implementation independent
 #include "drivers/stm32f1xx/stm32f1xx_gpio.h"
@@ -73,6 +75,16 @@ Endpoint Endpoint::get(unsigned char epNum)
 const int Endpoint::maxNumEndpoints()
 {
     return NUM_ENDPOINTS;
+}
+
+void deconfigureAll()
+{
+    EndpointImpl::IRQdeconfigureAll();
+}
+
+void configureAll(const unsigned char *desc)
+{
+    EndpointImpl::IRQconfigureAll(desc);
 }
 
 bool Endpoint::isInSideEnabled() const
@@ -186,98 +198,12 @@ bool Endpoint::read(unsigned char *data, int& readBytes)
 
 bool Endpoint::IRQwrite(const unsigned char *data, int size, int& written)
 {
-    written=0;
-    if(pImpl->IRQgetData().enabledIn==0) return false;
-    //EndpointRegister& epr=USB->endpoint[pImpl->IRQgetData().epNumber];
-    EndpointRegister& epr=USBperipheral::getEndpoint(pImpl->IRQgetData().epNumber);
-    EndpointRegister::Status stat=epr.IRQgetTxStatus();
-    if(stat==EndpointRegister::STALL) return false;
-
-    if(pImpl->IRQgetData().type==Descriptor::INTERRUPT)
-    {
-        //INTERRUPT
-        if(stat!=EndpointRegister::NAK) return true;//No error, just buffer full
-        written=min<unsigned int>(size,pImpl->IRQgetSizeOfInBuf());
-        SharedMemory::instance().copyBytesTo(pImpl->IRQgetInBuf(),data,written);
-        epr.IRQsetTxDataSize(written);
-        epr.IRQsetTxStatus(EndpointRegister::VALID);
-    } else {
-        //BULK
-        /*
-         * Found the long standing issue in this driver. While writing code
-         * which sends data continuously on EP1 BULK, the main would write two
-         * buffers and block (if using the blocking API), and when the PC side
-         * opens the serial port, no data would come through and the
-         * communications stalls before it starts.
-         * After printing the endpoint register, I noticed it switched between
-         * these three state:
-         * NAK, VALID and DTOG=0 SW_BUF=1, VALID and DTOG=0 SW_BUF=0.
-         * Now, table 153 on the stm32 datasheet says that when DTOG==SW_BUF
-         * the endpoint is in nak state.
-         * So, filling two buffers in a row stops everything.
-         * Solution: Force filling only one buffer.
-         */
-        if(pImpl->IRQgetBufferCount()>=1) return true;//No err, just buffer full
-        pImpl->IRQincBufferCount();
-        if(epr.IRQgetDtogRx()) //Actually, SW_BUF
-        {
-            written=min<unsigned int>(size,pImpl->IRQgetSizeOfBuf1());
-            SharedMemory::instance().copyBytesTo(pImpl->IRQgetBuf1(),data,written);
-            epr.IRQsetTxDataSize1(written);
-        } else {
-            written=min<unsigned int>(size,pImpl->IRQgetSizeOfBuf0());
-            SharedMemory::instance().copyBytesTo(pImpl->IRQgetBuf0(),data,written);
-            epr.IRQsetTxDataSize0(written);
-        }
-        epr.IRQtoggleDtogRx();
-        /*
-         * This is a quirk of the stm32 peripheral: when the double buffering
-         * feature is enabled, and the endpoint is set to valid, the peripheral
-         * assumes that both buffers are filled with valid data, but this is
-         * not the case. When IRQwrite is first called only one buffer is
-         * filled. If the host issued three IN transactions immediately after
-         * the IRQwrite and before any other IRQwrite, it will get first the
-         * buffer, and then two transactions with zero bytes. Unfortunately,
-         * I have no idea how to fix this.
-         */
-        epr.IRQsetTxStatus(EndpointRegister::VALID);
-    }
-    Tracer::IRQtrace(Ut::IN_BUF_FILL,pImpl->IRQgetData().epNumber,written);
-    return true;
+    return pImpl->write(data, size, written);
 }
 
 bool Endpoint::IRQread(unsigned char *data, int& readBytes)
 {
-    readBytes=0;
-    if(pImpl->IRQgetData().enabledOut==0) return false;
-    //EndpointRegister& epr=USB->endpoint[pImpl->IRQgetData().epNumber];
-    EndpointRegister& epr=USBperipheral::getEndpoint(pImpl->IRQgetData().epNumber);
-    EndpointRegister::Status stat=epr.IRQgetRxStatus();
-    if(stat==EndpointRegister::STALL) return false;
-
-    if(pImpl->IRQgetData().type==Descriptor::INTERRUPT)
-    {
-        //INTERRUPT
-        if(stat!=EndpointRegister::NAK) return true; //No errors, just no data
-        readBytes=epr.IRQgetReceivedBytes();
-        SharedMemory::instance().copyBytesFrom(data,pImpl->IRQgetOutBuf(),readBytes);
-        epr.IRQsetRxStatus(EndpointRegister::VALID);
-    } else {
-        //BULK
-        if(pImpl->IRQgetBufferCount()==0) return true; //No errors, just no data
-        pImpl->IRQdecBufferCount();
-        if(epr.IRQgetDtogTx()) //Actually, SW_BUF
-        {
-            readBytes=epr.IRQgetReceivedBytes1();
-            SharedMemory::instance().copyBytesFrom(data,pImpl->IRQgetBuf1(),readBytes);
-        } else {
-            readBytes=epr.IRQgetReceivedBytes0();
-            SharedMemory::instance().copyBytesFrom(data,pImpl->IRQgetBuf0(),readBytes);
-        }
-        epr.IRQtoggleDtogTx();
-    }
-    Tracer::IRQtrace(Ut::OUT_BUF_READ,pImpl->IRQgetData().epNumber,readBytes);
-    return true;
+    return pImpl->read(data, readBytes);
 }
 
 //
@@ -353,11 +279,7 @@ bool USBdevice::enable(const unsigned char *device,
     
     DeviceStateImpl::IRQsetState(USBdevice::DEFAULT);
 
-    //Configure interrupts
-    NVIC_EnableIRQ(USB_HP_CAN1_TX_IRQn);
-    NVIC_SetPriority(USB_HP_CAN1_TX_IRQn,3);//Higher priority (Max=0, min=15)
-    NVIC_EnableIRQ(USB_LP_CAN1_RX0_IRQn);
-    NVIC_SetPriority(USB_LP_CAN1_RX0_IRQn,4);//High priority (Max=0, min=15)
+    USBperipheral::configureInterrupts();
 
     #ifdef _MIOSIX
     }
