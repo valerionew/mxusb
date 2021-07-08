@@ -46,8 +46,7 @@ void EndpointImpl::IRQconfigureAll(const unsigned char *desc)
 
 void EndpointImpl::IRQdeconfigure(int epNum)
 {
-    //USB->endpoint[epNum]=epNum;
-    USBperipheral::setEndpoint(epNum);
+    USB->endpoint[epNum]=epNum;
     this->data.enabledIn=0;
     this->data.enabledOut=0;
     this->data.epNumber=epNum;
@@ -106,19 +105,18 @@ bool EndpointImpl::write(const unsigned char *data, int size, int& written)
 {
     written=0;
     if(IRQgetData().enabledIn==0) return false;
-    //EndpointRegister& epr=USB->endpoint[pImpl->IRQgetData().epNumber];
-    EndpointRegister& epr=USBperipheral::getEndpoint(IRQgetData().epNumber);
-    EndpointRegister::Status stat=epr.IRQgetTxStatus();
-    if(stat==EndpointRegister::STALL) return false;
+    EndpointRegister& epr=USB->endpoint[IRQgetData().epNumber];
+    RegisterStatus stat=epr.IRQgetTxStatus();
+    if(stat==RegisterStatus::STALL) return false;
 
     if(IRQgetData().type==Descriptor::INTERRUPT)
     {
         //INTERRUPT
-        if(stat!=EndpointRegister::NAK) return true;//No error, just buffer full
+        if(stat!=RegisterStatus::NAK) return true;//No error, just buffer full
         written=min<unsigned int>(size,IRQgetSizeOfInBuf());
         SharedMemory::instance().copyBytesTo(IRQgetInBuf(),data,written);
         epr.IRQsetTxDataSize(written);
-        epr.IRQsetTxStatus(EndpointRegister::VALID);
+        epr.IRQsetTxStatus(RegisterStatus::VALID);
     } else {
         //BULK
         /*
@@ -158,7 +156,7 @@ bool EndpointImpl::write(const unsigned char *data, int size, int& written)
          * buffer, and then two transactions with zero bytes. Unfortunately,
          * I have no idea how to fix this.
          */
-        epr.IRQsetTxStatus(EndpointRegister::VALID);
+        epr.IRQsetTxStatus(RegisterStatus::VALID);
     }
     Tracer::IRQtrace(Ut::IN_BUF_FILL,IRQgetData().epNumber,written);
     return true;
@@ -168,18 +166,17 @@ bool EndpointImpl::read(unsigned char *data, int& readBytes)
 {
     readBytes=0;
     if(IRQgetData().enabledOut==0) return false;
-    //EndpointRegister& epr=USB->endpoint[pImpl->IRQgetData().epNumber];
-    EndpointRegister& epr=USBperipheral::getEndpoint(IRQgetData().epNumber);
-    EndpointRegister::Status stat=epr.IRQgetRxStatus();
-    if(stat==EndpointRegister::STALL) return false;
+    EndpointRegister& epr=USB->endpoint[IRQgetData().epNumber];
+    RegisterStatus stat=epr.IRQgetRxStatus();
+    if(stat==RegisterStatus::STALL) return false;
 
     if(IRQgetData().type==Descriptor::INTERRUPT)
     {
         //INTERRUPT
-        if(stat!=EndpointRegister::NAK) return true; //No errors, just no data
+        if(stat!=RegisterStatus::NAK) return true; //No errors, just no data
         readBytes=epr.IRQgetReceivedBytes();
         SharedMemory::instance().copyBytesFrom(data,IRQgetOutBuf(),readBytes);
-        epr.IRQsetRxStatus(EndpointRegister::VALID);
+        epr.IRQsetRxStatus(RegisterStatus::VALID);
     } else {
         //BULK
         if(IRQgetBufferCount()==0) return true; //No errors, just no data
@@ -214,31 +211,23 @@ void EndpointImpl::IRQconfigureInterruptEndpoint(const unsigned char *desc)
 
     this->data.type=Descriptor::INTERRUPT;
 
-    //USB->endpoint[addr].IRQclearEpKind();
-    USBperipheral::getEndpoint(addr).IRQclearEpKind();
-    //USB->endpoint[addr].IRQsetType(EndpointRegister::INTERRUPT);
-    USBperipheral::getEndpoint(addr).IRQsetType(EndpointRegister::INTERRUPT);
+    USB->endpoint[addr].IRQclearEpKind();
+    USB->endpoint[addr].IRQsetType(RegisterType::INTERRUPT);
 
     if(bEndpointAddress & 0x80)
     {
         //IN endpoint
-        //USB->endpoint[addr].IRQsetDtogTx(false);
-        USBperipheral::getEndpoint(addr).IRQsetDtogTx(false);
-        //USB->endpoint[addr].IRQsetTxBuffer(ptr,0);
-        USBperipheral::getEndpoint(addr).IRQsetTxBuffer(ptr,0);
-        //USB->endpoint[addr].IRQsetTxStatus(EndpointRegister::NAK);
-        USBperipheral::getEndpoint(addr).IRQsetTxStatus(EndpointRegister::NAK);
+        USB->endpoint[addr].IRQsetDtogTx(false);
+        USB->endpoint[addr].IRQsetTxBuffer(ptr,0);
+        USB->endpoint[addr].IRQsetTxStatus(RegisterStatus::NAK);
         this->buf0=ptr;
         this->size0=wMaxPacketSize;
         this->data.enabledIn=1;
     } else {
         //OUT endpoint
-        //USB->endpoint[addr].IRQsetDtogRx(false);
-        USBperipheral::getEndpoint(addr).IRQsetDtogRx(false);
-        //USB->endpoint[addr].IRQsetRxBuffer(ptr,wMaxPacketSize);
-        USBperipheral::getEndpoint(addr).IRQsetRxBuffer(ptr,wMaxPacketSize);
-        //USB->endpoint[addr].IRQsetRxStatus(EndpointRegister::VALID);
-        USBperipheral::getEndpoint(addr).IRQsetRxStatus(EndpointRegister::VALID);
+        USB->endpoint[addr].IRQsetDtogRx(false);
+        USB->endpoint[addr].IRQsetRxBuffer(ptr,wMaxPacketSize);
+        USB->endpoint[addr].IRQsetRxStatus(RegisterStatus::VALID);
         this->buf1=ptr;
         this->size1=wMaxPacketSize;
         this->data.enabledOut=1;
@@ -266,37 +255,25 @@ void EndpointImpl::IRQconfigureBulkEndpoint(const unsigned char *desc)
     this->buf1=ptr1;
     this->size1=wMaxPacketSize;
 
-    //USB->endpoint[addr].IRQsetType(EndpointRegister::BULK);
-    USBperipheral::getEndpoint(addr).IRQsetType(EndpointRegister::BULK);
-    //USB->endpoint[addr].IRQsetEpKind();//Enpoint is double buffered
-    USBperipheral::getEndpoint(addr).IRQsetEpKind();//Enpoint is double buffered
+    USB->endpoint[addr].IRQsetType(RegisterType::BULK);
+    USB->endpoint[addr].IRQsetEpKind();//Enpoint is double buffered
 
     if(bEndpointAddress & 0x80)
     {
         //IN endpoint
-        //USB->endpoint[addr].IRQsetDtogTx(false);
-        USBperipheral::getEndpoint(addr).IRQsetDtogTx(false);
-        //USB->endpoint[addr].IRQsetDtogRx(false); //Actually, SW_BUF
-        USBperipheral::getEndpoint(addr).IRQsetDtogRx(false); //Actually, SW_BUF
-        //USB->endpoint[addr].IRQsetTxBuffer0(ptr0,0);
-        USBperipheral::getEndpoint(addr).IRQsetTxBuffer0(ptr0,0);
-        //USB->endpoint[addr].IRQsetTxBuffer1(ptr1,0);
-        USBperipheral::getEndpoint(addr).IRQsetTxBuffer1(ptr1,0);
-        //USB->endpoint[addr].IRQsetTxStatus(EndpointRegister::NAK);
-        USBperipheral::getEndpoint(addr).IRQsetTxStatus(EndpointRegister::NAK);
+        USB->endpoint[addr].IRQsetDtogTx(false);
+        USB->endpoint[addr].IRQsetDtogRx(false); //Actually, SW_BUF
+        USB->endpoint[addr].IRQsetTxBuffer0(ptr0,0);
+        USB->endpoint[addr].IRQsetTxBuffer1(ptr1,0);
+        USB->endpoint[addr].IRQsetTxStatus(RegisterStatus::NAK);
         this->data.enabledIn=1;
     } else {
         //OUT endpoint
-        //USB->endpoint[addr].IRQsetDtogRx(false);
-        USBperipheral::getEndpoint(addr).IRQsetDtogRx(false);
-        //USB->endpoint[addr].IRQsetDtogTx(false); //Actually, SW_BUF
-        USBperipheral::getEndpoint(addr).IRQsetDtogTx(false); //Actually, SW_BUF
-        //USB->endpoint[addr].IRQsetRxBuffer0(ptr0,wMaxPacketSize);
-        USBperipheral::getEndpoint(addr).IRQsetRxBuffer0(ptr0,wMaxPacketSize);
-        //USB->endpoint[addr].IRQsetRxBuffer1(ptr1,wMaxPacketSize);
-        USBperipheral::getEndpoint(addr).IRQsetRxBuffer1(ptr1,wMaxPacketSize);
-        //USB->endpoint[addr].IRQsetRxStatus(EndpointRegister::VALID);
-        USBperipheral::getEndpoint(addr).IRQsetRxStatus(EndpointRegister::VALID);
+        USB->endpoint[addr].IRQsetDtogRx(false);
+        USB->endpoint[addr].IRQsetDtogTx(false); //Actually, SW_BUF
+        USB->endpoint[addr].IRQsetRxBuffer0(ptr0,wMaxPacketSize);
+        USB->endpoint[addr].IRQsetRxBuffer1(ptr1,wMaxPacketSize);
+        USB->endpoint[addr].IRQsetRxStatus(RegisterStatus::VALID);
         this->data.enabledOut=1;
     }
     this->bufCount=0;

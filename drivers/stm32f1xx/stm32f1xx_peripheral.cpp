@@ -8,7 +8,7 @@ namespace mxusb {
 // class Endpoint
 //
 
-void EndpointRegister::IRQsetType(Type type)
+void EndpointRegister::IRQsetType(RegisterType type)
 {
     unsigned short reg=EPR;
     //Clear all toggle bits, so not to toggle any of them
@@ -21,7 +21,7 @@ void EndpointRegister::IRQsetType(Type type)
     EPR=reg;
 }
 
-void EndpointRegister::IRQsetTxStatus(Status status)
+void EndpointRegister::IRQsetTxStatus(RegisterStatus status)
 {
     unsigned short reg=EPR;
     //Clear all toggle bits except STAT_TX, since we need to toggle STAT_TX
@@ -33,12 +33,12 @@ void EndpointRegister::IRQsetTxStatus(Status status)
     EPR=reg;
 }
 
-EndpointRegister::Status EndpointRegister::IRQgetTxStatus() const
+RegisterStatus EndpointRegister::IRQgetTxStatus() const
 {
-    return static_cast<EndpointRegister::Status>((EPR>>4) & 0x3);
+    return static_cast<RegisterStatus>((EPR>>4) & 0x3);
 }
 
-void EndpointRegister::IRQsetRxStatus(Status status)
+void EndpointRegister::IRQsetRxStatus(RegisterStatus status)
 {
     unsigned short reg=EPR;
     //Clear all toggle bits except STAT_RX, since we need to toggle STAT_RX
@@ -50,9 +50,9 @@ void EndpointRegister::IRQsetRxStatus(Status status)
     EPR=reg;
 }
 
-EndpointRegister::Status EndpointRegister::IRQgetRxStatus() const
+RegisterStatus EndpointRegister::IRQgetRxStatus() const
 {
-    return static_cast<EndpointRegister::Status>((EPR>>12) & 0x3);
+    return static_cast<RegisterStatus>((EPR>>12) & 0x3);
 }
 
 void EndpointRegister::IRQsetTxBuffer(shmem_ptr addr, unsigned short size)

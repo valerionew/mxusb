@@ -20,6 +20,27 @@ namespace mxusb {
 const int NUM_ENDPOINTS=8;
 
 /**
+ * Note: bitmask for Descriptor::Type (bitmask used in standard USB
+ * descriptors) differ from Endpoint::Type (bitmask used in stm32's EPnR
+ * register bits for endpoint types)
+ */
+enum RegisterType
+{
+    BULK=0,
+    CONTROL=USB_EP0R_EP_TYPE_0,
+    ISOCHRONOUS=USB_EP0R_EP_TYPE_1,
+    INTERRUPT=USB_EP0R_EP_TYPE_1 | USB_EP0R_EP_TYPE_0
+};
+
+enum RegisterStatus
+{
+    DISABLED=0,
+    STALL=1<<0,
+    NAK=1<<1,
+    VALID=(1<<0) | (1<<1)
+};
+
+/**
  * \internal
  * Endpoint registers are quite a bit tricky to touch, since they both have
  * "normal" bits, rc_w0 bits that can only be cleared by writing zero and
@@ -30,55 +51,34 @@ class EndpointRegister
 {
 public:
     /**
-     * Note: bitmask for Descriptor::Type (bitmask used in standard USB
-     * descriptors) differ from Endpoint::Type (bitmask used in stm32's EPnR
-     * register bits for endpoint types)
-     */
-    enum Type
-    {
-        BULK=0,
-        CONTROL=USB_EP0R_EP_TYPE_0,
-        ISOCHRONOUS=USB_EP0R_EP_TYPE_1,
-        INTERRUPT=USB_EP0R_EP_TYPE_1 | USB_EP0R_EP_TYPE_0
-    };
-
-    enum Status
-    {
-        DISABLED=0,
-        STALL=1<<0,
-        NAK=1<<1,
-        VALID=(1<<0) | (1<<1)
-    };
-
-    /**
      * Set endpoint type
      * \param type BULK/CONTROL/ISOCHRONOUS/INTERRUPT
      */
-    void IRQsetType(Type type);
+    void IRQsetType(RegisterType type);
 
     /**
      * Set the way an endpoint answers IN transactions (device to host)
      * \param status DISABLED/STALL/NAK/VALID
      */
-    void IRQsetTxStatus(Status status);
+    void IRQsetTxStatus(RegisterStatus status);
 
     /**
      * Get the way an endpoint answers IN transactions (device to host)
      * \return status DISABLED/STALL/NAK/VALID
      */
-    Status IRQgetTxStatus() const;
+    RegisterStatus IRQgetTxStatus() const;
 
     /**
      * Set the way an endpoint answers OUT transactions (host to device)
      * \param status DISABLED/STALL/NAK/VALID
      */
-    void IRQsetRxStatus(Status status);
+    void IRQsetRxStatus(RegisterStatus status);
 
     /**
      * Get the way an endpoint answers OUT transactions (host to device)
      * \return status DISABLED/STALL/NAK/VALID
      */
-    Status IRQgetRxStatus() const;
+    RegisterStatus IRQgetRxStatus() const;
 
     /**
      * Set tx buffer for an endpoint. It is used for IN transactions
@@ -291,18 +291,6 @@ USBmemoryLayout* const USB=reinterpret_cast<USBmemoryLayout*>(0x40005c00);
 class USBperipheral
 {
 public:
-    static EndpointRegister& getEndpoint(unsigned char epNum)
-    {
-        // TODO: check epNum bounds
-        return USB->endpoint[epNum];
-    }
-
-    static void setEndpoint(int epNum)
-    {
-        // TODO: check epNum bounds
-        USB->endpoint[epNum] = epNum;
-    }
-
     static void setAddress(unsigned short addr)
     {
         USB->DADDR = addr;
@@ -357,6 +345,56 @@ public:
         USB->CNTR=USB_CNTR_PDWN | USB_CNTR_FRES;
         USB->ISTR=0; //Clear interrupt flags
         RCC->APB1ENR &= ~RCC_APB1ENR_USBEN;
+    }
+
+    static void ep0setTxStatus(RegisterStatus status)
+    {
+        USB->endpoint[0].IRQsetTxStatus(status);
+    }
+
+    static void ep0setRxStatus(RegisterStatus status)
+    {
+        USB->endpoint[0].IRQsetRxStatus(status);
+    }
+
+    static unsigned short ep0getReceivedBytes()
+    {
+        return USB->endpoint[0].IRQgetReceivedBytes();
+    }
+
+    static void ep0reset()
+    {
+        USB->endpoint[0] = 0;
+    }
+
+    static void ep0beginStatusTransaction()
+    {
+        USB->endpoint[0].IRQsetEpKind();
+    }
+
+    static void ep0endStatusTransaction()
+    {
+        USB->endpoint[0].IRQclearEpKind();
+    }
+
+    static void ep0setTxDataSize(unsigned short size)
+    {
+        USB->endpoint[0].IRQsetTxDataSize(size);
+    }
+
+    static void ep0setType(RegisterType type)
+    {
+        USB->endpoint[0].IRQsetType(type);
+    }
+
+    static void ep0setTxBuffer()
+    {
+        USB->endpoint[0].IRQsetTxBuffer(SharedMemory::instance().getEP0TxAddr(), EP0_SIZE);
+    }
+
+    static void ep0setRxBuffer()
+    {
+        USB->endpoint[0].IRQsetRxBuffer(SharedMemory::instance().getEP0RxAddr(), EP0_SIZE);
     }
 };
 
