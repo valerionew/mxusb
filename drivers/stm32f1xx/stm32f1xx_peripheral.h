@@ -291,111 +291,35 @@ USBmemoryLayout* const USB=reinterpret_cast<USBmemoryLayout*>(0x40005c00);
 class USBperipheral
 {
 public:
-    static void setAddress(unsigned short addr)
-    {
-        USB->DADDR = addr;
-    }
+    static void setAddress(unsigned short addr);
 
-    static void configureInterrupts()
-    {
-        //Configure interrupts
-        NVIC_EnableIRQ(USB_HP_CAN1_TX_IRQn);
-        NVIC_SetPriority(USB_HP_CAN1_TX_IRQn,3);//Higher priority (Max=0, min=15)
-        NVIC_EnableIRQ(USB_LP_CAN1_RX0_IRQn);
-        NVIC_SetPriority(USB_LP_CAN1_RX0_IRQn,4);//High priority (Max=0, min=15)
-    }
+    static void configureInterrupts();
 
-    static bool enable()
-    {
-        //Enable clock to USB peripheral
-        #if __CM3_CMSIS_VERSION >= 0x010030 //CMSIS 1.3 changed variable names
-        const int clock=SystemCoreClock;
-        #else //__CM3_CMSIS_VERSION
-        const int clock=SystemFrequency;
-        #endif //__CM3_CMSIS_VERSION
-        if(clock==72000000)
-            RCC->CFGR &= ~RCC_CFGR_USBPRE; //Prescaler=1.5 (72MHz/1.5=48MHz)
-        else if(clock==48000000)
-            RCC->CFGR |= RCC_CFGR_USBPRE;  //Prescaler=1   (48MHz)
-        else {
-            //USB can't work with other clock frequencies
-            #ifndef _MIOSIX
-            __enable_irq();
-            #endif //_MIOSIX
-            return false;
-        }
-        RCC->APB1ENR |= RCC_APB1ENR_USBEN;
-        return true;
-    }
+    static bool enable();
 
-    static void reset()
-    {
-        USB->CNTR=USB_CNTR_FRES; //Clear PDWN, leave FRES asserted
-        delayUs(1);  //Wait till USB analog circuitry stabilizes
-        USB->CNTR=0; //Clear FRES too, USB peripheral active
-        USB->ISTR=0; //Clear interrupt flags
-        
-        //First thing the host does is reset, so wait for that interrupt only
-        USB->CNTR=USB_CNTR_RESETM;
-    }
+    static void reset();
 
-    static void disable()
-    {
-        USB->DADDR=0;  //Clear EF bit
-        USB->CNTR=USB_CNTR_PDWN | USB_CNTR_FRES;
-        USB->ISTR=0; //Clear interrupt flags
-        RCC->APB1ENR &= ~RCC_APB1ENR_USBEN;
-    }
+    static void disable();
 
-    static void ep0setTxStatus(RegisterStatus status)
-    {
-        USB->endpoint[0].IRQsetTxStatus(status);
-    }
+    static void ep0setTxStatus(RegisterStatus status);
 
-    static void ep0setRxStatus(RegisterStatus status)
-    {
-        USB->endpoint[0].IRQsetRxStatus(status);
-    }
+    static void ep0setRxStatus(RegisterStatus status);
 
-    static unsigned short ep0getReceivedBytes()
-    {
-        return USB->endpoint[0].IRQgetReceivedBytes();
-    }
+    static unsigned short ep0getReceivedBytes();
 
-    static void ep0reset()
-    {
-        USB->endpoint[0] = 0;
-    }
+    static void ep0reset();
 
-    static void ep0beginStatusTransaction()
-    {
-        USB->endpoint[0].IRQsetEpKind();
-    }
+    static void ep0beginStatusTransaction();
 
-    static void ep0endStatusTransaction()
-    {
-        USB->endpoint[0].IRQclearEpKind();
-    }
+    static void ep0endStatusTransaction();
 
-    static void ep0setTxDataSize(unsigned short size)
-    {
-        USB->endpoint[0].IRQsetTxDataSize(size);
-    }
+    static void ep0setTxDataSize(unsigned short size);
 
-    static void ep0setType(RegisterType type)
-    {
-        USB->endpoint[0].IRQsetType(type);
-    }
+    static void ep0setType(RegisterType type);
 
-    static void ep0setTxBuffer()
-    {
-        USB->endpoint[0].IRQsetTxBuffer(SharedMemory::instance().getEP0TxAddr(), EP0_SIZE);
-    }
+    static void ep0setTxBuffer();
 
-    static void ep0setRxBuffer()
-    {
-        USB->endpoint[0].IRQsetRxBuffer(SharedMemory::instance().getEP0RxAddr(), EP0_SIZE);
-    }
+    static void ep0setRxBuffer();
 };
 
 } //namespace mxusb

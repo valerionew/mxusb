@@ -77,12 +77,12 @@ const int Endpoint::maxNumEndpoints()
     return NUM_ENDPOINTS;
 }
 
-void deconfigureAll()
+void Endpoint::deconfigureAll()
 {
     EndpointImpl::IRQdeconfigureAll();
 }
 
-void configureAll(const unsigned char *desc)
+void Endpoint::configureAll(const unsigned char *desc)
 {
     EndpointImpl::IRQconfigureAll(desc);
 }
@@ -268,6 +268,10 @@ bool USBdevice::enable(const unsigned char *device,
     
     //Enable clock to USB peripheral
     if (!USBperipheral::enable()) {
+        //USB can't work with other clock frequencies
+        #ifndef _MIOSIX
+        __enable_irq();
+        #endif //_MIOSIX
         return false;
     }
 
