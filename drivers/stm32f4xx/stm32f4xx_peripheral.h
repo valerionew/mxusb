@@ -20,6 +20,27 @@ namespace mxusb {
 const int NUM_ENDPOINTS=8;
 
 /**
+ * Note: bitmask for Descriptor::Type (bitmask used in standard USB
+ * descriptors) differ from Endpoint::Type (bitmask used in stm32's EPnR
+ * register bits for endpoint types)
+ */
+enum RegisterType
+{
+    BULK=0,
+    CONTROL=USB_EP0R_EP_TYPE_0,
+    ISOCHRONOUS=USB_EP0R_EP_TYPE_1,
+    INTERRUPT=USB_EP0R_EP_TYPE_1 | USB_EP0R_EP_TYPE_0
+};
+
+enum RegisterStatus
+{
+    DISABLED=0,
+    STALL=1<<0,
+    NAK=1<<1,
+    VALID=(1<<0) | (1<<1)
+};
+
+/**
  * \internal
  * Endpoint registers are quite a bit tricky to touch, since they both have
  * "normal" bits, rc_w0 bits that can only be cleared by writing zero and
@@ -30,55 +51,34 @@ class EndpointRegister
 {
 public:
     /**
-     * Note: bitmask for Descriptor::Type (bitmask used in standard USB
-     * descriptors) differ from Endpoint::Type (bitmask used in stm32's EPnR
-     * register bits for endpoint types)
-     */
-    enum Type
-    {
-        BULK=0,
-        CONTROL=USB_EP0R_EP_TYPE_0,
-        ISOCHRONOUS=USB_EP0R_EP_TYPE_1,
-        INTERRUPT=USB_EP0R_EP_TYPE_1 | USB_EP0R_EP_TYPE_0
-    };
-
-    enum Status
-    {
-        DISABLED=0,
-        STALL=1<<0,
-        NAK=1<<1,
-        VALID=(1<<0) | (1<<1)
-    };
-
-    /**
      * Set endpoint type
      * \param type BULK/CONTROL/ISOCHRONOUS/INTERRUPT
      */
-    void IRQsetType(Type type);
+    void IRQsetType(RegisterType type);
 
     /**
      * Set the way an endpoint answers IN transactions (device to host)
      * \param status DISABLED/STALL/NAK/VALID
      */
-    void IRQsetTxStatus(Status status);
+    void IRQsetTxStatus(RegisterStatus status);
 
     /**
      * Get the way an endpoint answers IN transactions (device to host)
      * \return status DISABLED/STALL/NAK/VALID
      */
-    Status IRQgetTxStatus() const;
+    RegisterStatus IRQgetTxStatus() const;
 
     /**
      * Set the way an endpoint answers OUT transactions (host to device)
      * \param status DISABLED/STALL/NAK/VALID
      */
-    void IRQsetRxStatus(Status status);
+    void IRQsetRxStatus(RegisterStatus status);
 
     /**
      * Get the way an endpoint answers OUT transactions (host to device)
      * \return status DISABLED/STALL/NAK/VALID
      */
-    Status IRQgetRxStatus() const;
+    RegisterStatus IRQgetRxStatus() const;
 
     /**
      * Set tx buffer for an endpoint. It is used for IN transactions
@@ -262,73 +262,35 @@ private:
 class USBperipheral
 {
 public:
-    static EndpointRegister& getEndpoint(unsigned char epNum)
-    {
-        // TODO: check epNum bounds
-        return USB->endpoint[epNum];
-    }
+    static void setAddress(unsigned short addr);
 
-    static void setEndpoint(int epNum)
-    {
-        // TODO: check epNum bounds
-        USB->endpoint[epNum] = epNum;
-    }
+    static void configureInterrupts();
 
-    static void setAddress(unsigned short addr)
-    {
-        USB->DADDR = addr;
-    }
+    static bool enable();
 
-    static void configureInterrupts()
-    {
-        //Configure interrupts
-        NVIC_EnableIRQ(USB_HP_CAN1_TX_IRQn);
-        NVIC_SetPriority(USB_HP_CAN1_TX_IRQn,3);//Higher priority (Max=0, min=15)
-        NVIC_EnableIRQ(USB_LP_CAN1_RX0_IRQn);
-        NVIC_SetPriority(USB_LP_CAN1_RX0_IRQn,4);//High priority (Max=0, min=15)
-    }
+    static void reset();
 
-    static bool enable()
-    {
-        //Enable clock to USB peripheral
-        #if __CM3_CMSIS_VERSION >= 0x010030 //CMSIS 1.3 changed variable names
-        const int clock=SystemCoreClock;
-        #else //__CM3_CMSIS_VERSION
-        const int clock=SystemFrequency;
-        #endif //__CM3_CMSIS_VERSION
-        if(clock==72000000)
-            RCC->CFGR &= ~RCC_CFGR_USBPRE; //Prescaler=1.5 (72MHz/1.5=48MHz)
-        else if(clock==48000000)
-            RCC->CFGR |= RCC_CFGR_USBPRE;  //Prescaler=1   (48MHz)
-        else {
-            //USB can't work with other clock frequencies
-            #ifndef _MIOSIX
-            __enable_irq();
-            #endif //_MIOSIX
-            return false;
-        }
-        RCC->APB1ENR |= RCC_APB1ENR_USBEN;
-        return true;
-    }
+    static void disable();
 
-    static void reset()
-    {
-        USB->CNTR=USB_CNTR_FRES; //Clear PDWN, leave FRES asserted
-        delayUs(1);  //Wait till USB analog circuitry stabilizes
-        USB->CNTR=0; //Clear FRES too, USB peripheral active
-        USB->ISTR=0; //Clear interrupt flags
-        
-        //First thing the host does is reset, so wait for that interrupt only
-        USB->CNTR=USB_CNTR_RESETM;
-    }
+    static void ep0setTxStatus(RegisterStatus status);
 
-    static void disable()
-    {
-        USB->DADDR=0;  //Clear EF bit
-        USB->CNTR=USB_CNTR_PDWN | USB_CNTR_FRES;
-        USB->ISTR=0; //Clear interrupt flags
-        RCC->APB1ENR &= ~RCC_APB1ENR_USBEN;
-    }
+    static void ep0setRxStatus(RegisterStatus status);
+
+    static unsigned short ep0getReceivedBytes();
+
+    static void ep0reset();
+
+    static void ep0beginStatusTransaction();
+
+    static void ep0endStatusTransaction();
+
+    static void ep0setTxDataSize(unsigned short size);
+
+    static void ep0setType(RegisterType type);
+
+    static void ep0setTxBuffer();
+
+    static void ep0setRxBuffer();
 };
 
 } //namespace mxusb
