@@ -110,8 +110,8 @@ RegisterStatus EndpointRegister::IRQgetRxStatus() const
 void EndpointRegister::IRQsetTxBuffer(shmem_ptr addr, unsigned short size)
 {
     int ep=EPR & USB_EP0R_EA;
-    SharedMemory::instance().shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+0)=addr & 0xfffe;
-    SharedMemory::instance().shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+2)=size;
+    SharedMemoryImpl::shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+0)=addr & 0xfffe;
+    SharedMemoryImpl::shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+2)=size;
 }
 
 void EndpointRegister::IRQsetTxBuffer0(shmem_ptr addr, unsigned short size)
@@ -122,14 +122,14 @@ void EndpointRegister::IRQsetTxBuffer0(shmem_ptr addr, unsigned short size)
 void EndpointRegister::IRQsetTxBuffer1(shmem_ptr addr, unsigned short size)
 {
     int ep=EPR & USB_EP0R_EA;
-    SharedMemory::instance().shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+4)=addr & 0xfffe;
-    SharedMemory::instance().shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+6)=size;
+    SharedMemoryImpl::shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+4)=addr & 0xfffe;
+    SharedMemoryImpl::shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+6)=size;
 }
 
 void EndpointRegister::IRQsetTxDataSize(unsigned short size)
 {
     int ep=EPR & USB_EP0R_EA;
-    SharedMemory::instance().shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+2)=size;
+    SharedMemoryImpl::shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+2)=size;
 }
 
 void EndpointRegister::IRQsetTxDataSize0(unsigned short size)
@@ -140,40 +140,40 @@ void EndpointRegister::IRQsetTxDataSize0(unsigned short size)
 void EndpointRegister::IRQsetTxDataSize1(unsigned short size)
 {
     int ep=EPR & USB_EP0R_EA;
-    SharedMemory::instance().shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+6)=size;
+    SharedMemoryImpl::shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+6)=size;
 }
 
 void EndpointRegister::IRQsetRxBuffer(shmem_ptr addr, unsigned short size)
 {
     int ep=EPR & USB_EP0R_EA;
-    SharedMemory::instance().shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+4)=addr & 0xfffe;
+    SharedMemoryImpl::shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+4)=addr & 0xfffe;
     if(size>62)
     {
         size/=32;
         size--;
         size<<=10;
         size|=0x8000; //BL_SIZE=1
-        SharedMemory::instance().shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+6)=size;
+        SharedMemoryImpl::shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+6)=size;
     } else {
         size<<=10;
-        SharedMemory::instance().shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+6)=size;
+        SharedMemoryImpl::shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+6)=size;
     }
 }
 
 void EndpointRegister::IRQsetRxBuffer0(shmem_ptr addr, unsigned short size)
 {
     int ep=EPR & USB_EP0R_EA;
-    SharedMemory::instance().shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+0)=addr & 0xfffe;
+    SharedMemoryImpl::shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+0)=addr & 0xfffe;
     if(size>62)
     {
         size/=32;
         size--;
         size<<=10;
         size|=0x8000; //BL_SIZE=1
-        SharedMemory::instance().shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+2)=size;
+        SharedMemoryImpl::shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+2)=size;
     } else {
         size<<=10;
-        SharedMemory::instance().shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+2)=size;
+        SharedMemoryImpl::shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+2)=size;
     }
 }
 
@@ -185,13 +185,13 @@ void EndpointRegister::IRQsetRxBuffer1(shmem_ptr addr, unsigned short size)
 unsigned short EndpointRegister::IRQgetReceivedBytes() const
 {
     int ep=EPR & USB_EP0R_EA;
-    return SharedMemory::instance().shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+6) & 0x3ff;
+    return SharedMemoryImpl::shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+6) & 0x3ff;
 }
 
 unsigned short EndpointRegister::IRQgetReceivedBytes0() const
 {
     int ep=EPR & USB_EP0R_EA;
-    return SharedMemory::instance().shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+2) & 0x3ff;
+    return SharedMemoryImpl::shortAt(SharedMemoryImpl::BTABLE_ADDR+8*ep+2) & 0x3ff;
 }
 
 unsigned short EndpointRegister::IRQgetReceivedBytes1() const
@@ -399,12 +399,14 @@ void USBperipheral::ep0setType(RegisterType type)
 
 void USBperipheral::ep0setTxBuffer()
 {
-    USB->endpoint[0].IRQsetTxBuffer(SharedMemory::instance().getEP0TxAddr(), EP0_SIZE);
+    //USB->endpoint[0].IRQsetTxBuffer(SharedMemory::instance().getEP0TxAddr(), EP0_SIZE);
+    USB->endpoint[0].IRQsetTxBuffer(SharedMemoryImpl::EP0TX_ADDR, EP0_SIZE);
 }
 
 void USBperipheral::ep0setRxBuffer()
 {
-    USB->endpoint[0].IRQsetRxBuffer(SharedMemory::instance().getEP0RxAddr(), EP0_SIZE);
+    //USB->endpoint[0].IRQsetRxBuffer(SharedMemory::instance().getEP0RxAddr(), EP0_SIZE);
+    USB->endpoint[0].IRQsetRxBuffer(SharedMemoryImpl::EP0RX_ADDR, EP0_SIZE);
 }
 
 } //namespace mxusb

@@ -83,7 +83,7 @@ public:
      * always two bytes aligned (last bit is zero). If not enough memory is
      * available, zero is returned
      */
-    shmem_ptr allocate(unsigned short size);
+    shmem_ptr allocate(unsigned char ep, unsigned short size, unsigned char idx = 0);
 
     /**
      * This invalidates all memory allocated with allocate
@@ -102,8 +102,8 @@ public:
      * result+n-2 are valid pointers
      * \param n number of bytes to transfer
      */
-    void copyBytesFrom(unsigned char *dest, shmem_ptr src,
-            unsigned short n);
+    //void copyBytesFrom(unsigned char *dest, shmem_ptr src,unsigned short n);
+    void copyBytesFrom_NEW(unsigned char *dest, unsigned char ep, unsigned short n, unsigned char idx = 0);
 
     /**
      * Copy data from RAM to the shared memory
@@ -117,8 +117,8 @@ public:
      * \param src pointer to a normal buffer already allocated in RAM
      * \param n number of bytes to transfer
      */
-    void copyBytesTo(shmem_ptr dest, const unsigned char *src,
-            unsigned short n);
+    //void copyBytesTo(shmem_ptr dest, const unsigned char *src,unsigned short n);
+    void copyBytesTo_NEW(unsigned char ep, const unsigned char *src, unsigned short n, unsigned char idx = 0);
 
     /**
      * Access a short int into an endpoint.
@@ -129,7 +129,7 @@ public:
      * reference is to an int, but only the first two bytes are accessible.
      * \return a reference to read/write into that memory location.
      */
-    unsigned int& shortAt(shmem_ptr ptr);
+    //unsigned int& shortAt(shmem_ptr ptr);
 
     /**
      * Access a byte int into an endpoint.
@@ -141,13 +141,13 @@ public:
      * is not allowed on a byte basis. To write into the shared memory, use
      * shortAt()
      */
-    const unsigned char charAt(shmem_ptr ptr);
+    //const unsigned char charAt(shmem_ptr ptr);
 
-    const unsigned short getEP0Size();
+    //const unsigned short getEP0Size();
 
-    const shmem_ptr getEP0TxAddr();
+    //const shmem_ptr getEP0TxAddr();
 
-    const shmem_ptr getEP0RxAddr();
+    //const shmem_ptr getEP0RxAddr();
 
 private:
     SharedMemory(const SharedMemory&);

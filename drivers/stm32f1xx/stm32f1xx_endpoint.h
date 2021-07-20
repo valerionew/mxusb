@@ -110,52 +110,54 @@ public:
     /**
      * \return buf1 for double buffered BULK endpoints
      */
-    shmem_ptr IRQgetBuf1() const { return buf1; }
+    //shmem_ptr IRQgetBuf1() const { return buf1; }
 
     /**
      * \return size of buf1 for double buffered BULK endpoints
      */
-    unsigned char IRQgetSizeOfBuf1() const { return size1; }
+    //unsigned char IRQgetSizeOfBuf1() const { return size1; }
 
     /**
      * \return OUT buffer for INTERRUPT endpoints
      */
-    shmem_ptr IRQgetOutBuf() const { return buf1; }
+    //shmem_ptr IRQgetOutBuf() const { return buf1; }
 
     /**
      * \return size of OUT buffer for INTERRUPT endpoints
      */
-    unsigned char IRQgetSizeOfOutBuf() const { return size1; }
+    //unsigned char IRQgetSizeOfOutBuf() const { return size1; }
 
     /**
      * \return size of OUT buffer for INTERRUPT endpoints
      */
-    unsigned char getSizeOfOutBuf() const { return size1; }
+    //unsigned char getSizeOfOutBuf() const { return size1; }
+    unsigned char getSizeOfOutBuf() const { return bufSize; }
 
     /**
      * \return buf0 for double buffered BULK endpoints
      */
-    shmem_ptr IRQgetBuf0() const { return buf0; }
+    //shmem_ptr IRQgetBuf0() const { return buf0; }
 
     /**
      * \return size of buf0 for double buffered BULK endpoints
      */
-    unsigned char IRQgetSizeOfBuf0() const { return size0; }
+    //unsigned char IRQgetSizeOfBuf0() const { return size0; }
 
     /**
      * \return IN buffer for INTERRUPT endpoints
      */
-    shmem_ptr IRQgetInBuf() const { return buf0; }
+    //shmem_ptr IRQgetInBuf() const { return buf0; }
 
     /**
      * \return size of IN buffer for INTERRUPT endpoints
      */
-    unsigned char IRQgetSizeOfInBuf() const {  return size0; }
+    //unsigned char IRQgetSizeOfInBuf() const {  return size0; }
 
     /**
      * \return size of IN buffer for INTERRUPT endpoints
      */
-    unsigned char getSizeOfInBuf() const { return size0; }
+    //unsigned char getSizeOfInBuf() const { return size0; }
+    unsigned char getSizeOfInBuf() const { return bufSize; }
 
     /**
      * \return endpoint data
@@ -221,7 +223,7 @@ private:
     EndpointImpl& operator= (const EndpointImpl&);
 
     #ifdef _MIOSIX
-    EndpointImpl(): data(), size0(0), size1(0), buf0(0), buf1(0),
+    EndpointImpl(): data(), //size0(0), size1(0), buf0(0), buf1(0),
             waitIn(0), waitOut(0) {}
     #else //_MIOSIX
     EndpointImpl(): data(), size0(0), size1(0), buf0(0), buf1(0) {}
@@ -244,10 +246,11 @@ private:
 
     EpData data;            ///< Endpoint data (status, type, number)
     unsigned char bufCount; ///< Buffer count, used for double buffered BULK
-    unsigned char size0;    ///< Size of buf0 (if type==BULK size0==size1)
-    unsigned char size1;    ///< Size of buf1 (if type==BULK size0==size1)
-    shmem_ptr buf0;         ///< IN  buffer for INTERRUPT, buf0 for BULK
-    shmem_ptr buf1;         ///< OUT buffer for INTERRUPT, buf1 for BULK
+    //unsigned char size0;    ///< Size of buf0 (if type==BULK size0==size1)
+    //unsigned char size1;    ///< Size of buf1 (if type==BULK size0==size1)
+    //shmem_ptr buf0;         ///< IN  buffer for INTERRUPT, buf0 for BULK
+    //shmem_ptr buf1;         ///< OUT buffer for INTERRUPT, buf1 for BULK
+    unsigned char bufSize;
 
     #ifdef _MIOSIX
     miosix::Thread *waitIn;  ///< Thread waiting on IN side
