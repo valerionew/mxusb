@@ -1,6 +1,7 @@
 #ifndef STM32F1XX_PERIPHERAL_H
 #define	STM32F1XX_PERIPHERAL_H
 
+#include "drivers/stm32f1xx/stm32f1xx_config.h"
 #include "drivers/stm32f1xx/stm32f1xx_memory.h"
 
 #ifdef _MIOSIX
@@ -14,10 +15,6 @@ using namespace miosix;
 #ifdef _BOARD_STM32F103C8_BREAKOUT
 
 namespace mxusb {
-
-/// \internal
-/// Number of hardware endpoints of the stm32
-const int NUM_ENDPOINTS=8;
 
 /**
  * Note: bitmask for Descriptor::Type (bitmask used in standard USB

@@ -90,7 +90,8 @@ void DefCtrlPipe::IRQsetup()
     //Copy packet into setup struct
     unsigned char *packet=reinterpret_cast<unsigned char*>(&setup);
     //SharedMemory::instance().copyBytesFrom(packet,SharedMemoryImpl::EP0RX_ADDR,sizeof(setup));
-    SharedMemory::instance().copyBytesFrom(packet,SharedMemory::instance().getEP0RxAddr(),sizeof(setup));
+    //SharedMemory::instance().copyBytesFrom(packet,SharedMemory::instance().getEP0RxAddr(),sizeof(setup));
+    SharedMemory::instance().copyBytesFrom_NEW(packet,0,sizeof(setup));
     Tracer::IRQtraceArray(Ut::EP0_VALID_SETUP,packet,sizeof(setup));
 
     if(controlState.state!=CTR_NO_REQ_PENDING)
@@ -448,7 +449,8 @@ void DefCtrlPipe::IRQstartInData(const unsigned char* data, unsigned short size)
     if(size>=EP0_SIZE)
     {
         //SharedMemory::instance().copyBytesTo(SharedMemoryImpl::EP0TX_ADDR,data,EP0_SIZE);
-        SharedMemory::instance().copyBytesTo(SharedMemory::instance().getEP0TxAddr(),data,EP0_SIZE);
+        //SharedMemory::instance().copyBytesTo(SharedMemory::instance().getEP0TxAddr(),data,EP0_SIZE);
+        SharedMemory::instance().copyBytesTo_NEW(0,data,EP0_SIZE);
         //ep.IRQsetTxDataSize(EP0_SIZE);
         USBperipheral::ep0setTxDataSize(EP0_SIZE);
         controlState.state=CTR_IN_IN_PROGRESS;
@@ -460,7 +462,8 @@ void DefCtrlPipe::IRQstartInData(const unsigned char* data, unsigned short size)
         Tracer::IRQtrace(Ut::IN_BUF_FILL,0,EP0_SIZE);
     } else {
         //SharedMemory::instance().copyBytesTo(SharedMemoryImpl::EP0TX_ADDR,data,size);
-        SharedMemory::instance().copyBytesTo(SharedMemory::instance().getEP0TxAddr(),data,size);
+        //SharedMemory::instance().copyBytesTo(SharedMemory::instance().getEP0TxAddr(),data,size);
+        SharedMemory::instance().copyBytesTo_NEW(0,data,size);
         //ep.IRQsetTxDataSize(size);
         USBperipheral::ep0setTxDataSize(size);
         controlState.state=CTR_IN_STATUS_BEGIN;
@@ -488,7 +491,8 @@ void DefCtrlPipe::IRQstartCustomOutData()
     }
 
     //SharedMemory::instance().copyBytesFrom(controlState.ptr,SharedMemoryImpl::EP0RX_ADDR,received);
-    SharedMemory::instance().copyBytesFrom(controlState.ptr,SharedMemory::instance().getEP0RxAddr(),received);
+    //SharedMemory::instance().copyBytesFrom(controlState.ptr,SharedMemory::instance().getEP0RxAddr(),received);
+    SharedMemory::instance().copyBytesFrom_NEW(controlState.ptr,0,received);
     controlState.ptr+=received;
     controlState.size-=received;
     
