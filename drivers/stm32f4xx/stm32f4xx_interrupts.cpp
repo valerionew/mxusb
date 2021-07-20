@@ -54,8 +54,8 @@ static void IRQhandleReset()
  * \internal
  * Actual low priority interrupt handler.
  */
-void USBirqLpHandler() __attribute__ ((noinline));
-void USBirqLpHandler()
+void USBirqHandler() __attribute__ ((noinline));
+void USBirqHandler()
 {
     unsigned short flags=USB->ISTR;
     Callbacks *callbacks=Callbacks::IRQgetCallbacks();
@@ -134,44 +134,6 @@ void USBirqLpHandler()
                 callbacks->IRQendpoint(epNum,Endpoint::IN);
                 epi->IRQwakeWaitingThreadOnInEndpoint();
             }
-        }
-        //Read again the ISTR register so that if more endpoints have completed
-        //a transaction, they are all serviced
-        flags=USB->ISTR;
-    }
-}
-
-/**
- * \internal
- * Actual high priority interrupt handler.
- */
-void USBirqHpHandler() __attribute__ ((noinline));
-void USBirqHpHandler()
-{
-    unsigned short flags=USB->ISTR;
-    Callbacks *callbacks=Callbacks::IRQgetCallbacks();
-    while(flags & USB_ISTR_CTR)
-    {
-        int epNum=flags & USB_ISTR_EP_ID;
-        unsigned short reg=USB->endpoint[epNum].get();
-        EndpointImpl *epi=EndpointImpl::IRQget(epNum);
-        if(reg & USB_EP0R_CTR_RX)
-        {
-            USB->endpoint[epNum].IRQclearRxInterruptFlag();
-            //NOTE: Increment buffer before the callabck
-            epi->IRQincBufferCount();
-            callbacks->IRQendpoint(epNum,Endpoint::OUT);
-            epi->IRQwakeWaitingThreadOnOutEndpoint();
-        }
-
-        if(reg & USB_EP0R_CTR_TX)
-        {
-            USB->endpoint[epNum].IRQclearTxInterruptFlag();
-
-            //NOTE: Decrement buffer before the callabck
-            epi->IRQdecBufferCount();
-            callbacks->IRQendpoint(epNum,Endpoint::IN);
-            epi->IRQwakeWaitingThreadOnInEndpoint();
         }
         //Read again the ISTR register so that if more endpoints have completed
         //a transaction, they are all serviced
