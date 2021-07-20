@@ -18,37 +18,17 @@ using namespace miosix;
  * Low priority interrupt, called for everything except double buffered
  * bulk/isochronous correct transfers.
  */
-extern void USB_LP_CAN1_RX0_IRQHandler() __attribute__((naked));
-void USB_LP_CAN1_RX0_IRQHandler()
+extern void OTG_FS_IRQHandler() __attribute__((naked));
+void OTG_FS_IRQHandler()
 {
     #ifdef _MIOSIX
     //Since a context switch can happen within this interrupt handler, it is
     //necessary to save and restore context
     saveContext();
-    asm volatile("bl _ZN5mxusb15USBirqLpHandlerEv");
+    asm volatile("bl _ZN5mxusb13USBirqHandlerEv");
     restoreContext();
     #else //_MIOSIX
     asm volatile("ldr r0, =_ZN5mxusb15USBirqLpHandlerEv\n\t"
-                 "bx  r0                               \n\t");
-    #endif //_MIOSIX
-}
-
-/**
- * \internal
- * High priority interrupt, called for a correct transfer on double bufferes
- * bulk/isochronous endpoint.
- */
-extern void USB_HP_CAN1_TX_IRQHandler() __attribute__((naked));
-void USB_HP_CAN1_TX_IRQHandler()
-{
-    #ifdef _MIOSIX
-    //Since a context switch can happen within this interrupt handler, it is
-    //necessary to save and restore context
-    saveContext();
-    asm volatile("bl _ZN5mxusb15USBirqHpHandlerEv");
-    restoreContext();
-    #else //_MIOSIX
-    asm volatile("ldr r0, =_ZN5mxusb15USBirqHpHandlerEv\n\t"
                  "bx  r0                               \n\t");
     #endif //_MIOSIX
 }
@@ -313,10 +293,8 @@ void USBperipheral::setAddress(unsigned short addr)
 void USBperipheral::configureInterrupts()
 {
     //Configure interrupts
-    NVIC_EnableIRQ(USB_HP_CAN1_TX_IRQn);
-    NVIC_SetPriority(USB_HP_CAN1_TX_IRQn,3);//Higher priority (Max=0, min=15)
-    NVIC_EnableIRQ(USB_LP_CAN1_RX0_IRQn);
-    NVIC_SetPriority(USB_LP_CAN1_RX0_IRQn,4);//High priority (Max=0, min=15)
+    NVIC_EnableIRQ(OTG_FS_IRQn);
+    NVIC_SetPriority(OTG_FS_IRQn,3);//Higher priority (Max=0, min=15)
 }
 
 bool USBperipheral::enable()
