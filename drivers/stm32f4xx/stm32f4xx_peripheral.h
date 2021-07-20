@@ -15,10 +15,6 @@ using namespace miosix;
 
 namespace mxusb {
 
-/// \internal
-/// Number of hardware endpoints of the stm32
-const int NUM_ENDPOINTS=8;
-
 /**
  * Note: bitmask for Descriptor::Type (bitmask used in standard USB
  * descriptors) differ from Endpoint::Type (bitmask used in stm32's EPnR
