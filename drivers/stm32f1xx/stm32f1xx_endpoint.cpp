@@ -114,7 +114,7 @@ bool EndpointImpl::write(const unsigned char *data, int size, int& written)
         //INTERRUPT
         if(stat!=RegisterStatus::NAK) return true;//No error, just buffer full
         //written=min<unsigned int>(size,IRQgetSizeOfInBuf());
-        written=min<unsigned int>(size,getSizeOfOutBuf());
+        written=min<unsigned int>(size,getSizeOfInBuf());
         //SharedMemory::instance().copyBytesTo(IRQgetInBuf(),data,written);
         SharedMemory::instance().copyBytesTo_NEW(IRQgetData().epNumber,data,written,0);
         epr.IRQsetTxDataSize(written);

@@ -36,7 +36,7 @@ namespace mxusb {
 // class SharedMemory
 //
 
-shmem_ptr SharedMemoryImpl::allocate(unsigned short size)
+shmem_ptr SharedMemoryImpl::allocate(unsigned char ep, unsigned short size, unsigned char idx)
 {
     if(size % 2 !=0) size++;
     if(currentEnd+size>END) return 0;
@@ -72,6 +72,10 @@ void SharedMemoryImpl::copyBytesFrom(unsigned char *dest, shmem_ptr src,
         if((i & 1)==1) src2+=2;
     }
 }
+void SharedMemoryImpl::copyBytesFrom_NEW(unsigned char *dest, unsigned char ep, unsigned short n, unsigned char idx)
+{
+    // TODO
+}
 
 void SharedMemoryImpl::copyBytesTo(shmem_ptr dest, const unsigned char *src,
         unsigned short n)
@@ -87,10 +91,14 @@ void SharedMemoryImpl::copyBytesTo(shmem_ptr dest, const unsigned char *src,
     }
     //Use slow version if dest is not two words aligned
     n=(n+1) & ~1; //Rount to upper # divisible by two
-    for(int i=0;i<n;i+=2) shortAt(dest+i)=toShort(&src[i]);
+    //for(int i=0;i<n;i+=2) shortAt(dest+i)=toShort(&src[i]);
+}
+void SharedMemoryImpl::copyBytesTo_NEW(unsigned char ep, const unsigned char *src, unsigned short n, unsigned char idx)
+{
+    // TODO
 }
 
-unsigned int& SharedMemoryImpl::shortAt(shmem_ptr ptr)
+/*unsigned int& SharedMemoryImpl::shortAt(shmem_ptr ptr)
 {
     return *(USB_RAM+(ptr>>1));
 }
@@ -113,7 +121,7 @@ const shmem_ptr SharedMemoryImpl::getEP0TxAddr()
 const shmem_ptr SharedMemoryImpl::getEP0RxAddr()
 {
     return SharedMemoryImpl::EP0RX_ADDR;
-}
+}*/
 
 shmem_ptr SharedMemoryImpl::currentEnd=DYNAMIC_AREA;
 
