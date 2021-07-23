@@ -262,6 +262,10 @@ public:
 
     static void configureInterrupts();
 
+    /**
+     * \brief The enable method of the stm32f4 is supposed to support PERIPHERAL ONLY mode.
+     * Hence, SRP and HNP are both disabled and the mode is forced to be peripheral only.
+     */
     static bool enable();
 
     static void reset();
@@ -287,6 +291,13 @@ public:
     static void ep0setTxBuffer();
 
     static void ep0setRxBuffer();
+
+private:
+    static void core_initialization();
+
+    static void power_on();
+
+    static void device_initialization();
 };
 
 } //namespace mxusb

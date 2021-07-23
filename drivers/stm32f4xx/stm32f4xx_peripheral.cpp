@@ -299,21 +299,84 @@ void USBperipheral::configureInterrupts()
 
 bool USBperipheral::enable()
 {
+    // F1 CODE
     //Enable clock to USB peripheral
-    #if __CM3_CMSIS_VERSION >= 0x010030 //CMSIS 1.3 changed variable names
-    const int clock=SystemCoreClock;
-    #else //__CM3_CMSIS_VERSION
-    const int clock=SystemFrequency;
-    #endif //__CM3_CMSIS_VERSION
-    if(clock==72000000)
-        RCC->CFGR &= ~RCC_CFGR_USBPRE; //Prescaler=1.5 (72MHz/1.5=48MHz)
-    else if(clock==48000000)
-        RCC->CFGR |= RCC_CFGR_USBPRE;  //Prescaler=1   (48MHz)
-    else {
-        return false;
+    // #if __CM3_CMSIS_VERSION >= 0x010030 //CMSIS 1.3 changed variable names
+    // const int clock=SystemCoreClock;
+    // #else //__CM3_CMSIS_VERSION
+    // const int clock=SystemFrequency;
+    // #endif //__CM3_CMSIS_VERSION
+    // if(clock==72000000)
+    //     RCC->CFGR &= ~RCC_CFGR_USBPRE; //Prescaler=1.5 (72MHz/1.5=48MHz)
+    // else if(clock==48000000)
+    //     RCC->CFGR |= RCC_CFGR_USBPRE;  //Prescaler=1   (48MHz)
+    // else {
+    //     return false;
+    // }
+    // RCC->APB1ENR |= RCC_APB1ENR_USBEN;
+    // return true;
+
+    power_on();
+    
+    core_initialization();
+
+    // Current mode of operation == device
+    if ((USB_OTG_FS->GINTSTS & USB_OTG_GINTSTS_CMOD) == 0)
+    {
+        device_initialization();
+        // After that, the endpoint initialization must be done at the USB reset signal.
     }
-    RCC->APB1ENR |= RCC_APB1ENR_USBEN;
-    return true;
+    else // Current mode == host
+    {
+        //TODO return a message saying "Host mode not supported bu mxusb". This requires a change in the return value of this method.
+    }
+}
+
+void power_on()
+{
+    // Enable clock to OTG FS peripheral
+    RCC->AHB2ENR |= RCC_AHB2ENR_OTGFSEN;
+
+    // Switch on full-speed transceiver module of PHY.
+    // ST switch on power using the bit "power down", very weird and tricky...
+    USB_OTG_FS->GCCFG |= USB_OTG_GCCFG_PWRDWN;
+}
+
+void core_initialization()
+{
+    // FIELDS IN OTG_FS_GAHBCFG REGISTER
+    // Global interrupt mask bit GINTMSK = 1
+    USB_OTG_FS->GAHBCFG |= USB_OTG_GAHBCFG_GINT;
+    // Periodic and non-periodic TxFIFO empty level
+    // NB: periodic TxFIFO empty level is only accessible in host mode, and the non-periodic is accessible in both mode. The documentation wants only the periodic FIFO to be programmed, along with the RxFIFO non-empty level. The RxFIFO non-empty level, though, is not writable. It's strange and I think they wanted to have the non-periodic to be programmed and not the RxFIFO. Anyway, this is weird, again.
+    USB_OTG_FS->GAHBCFG |= USB_OTG_GAHBCFG_PTXFELVL | USB_OTG_GAHBCFG_TXFELVL;
+
+    // FIELDS IN OTG_FS_GUSBCFG
+    // Peripheral only mode forced
+    USB_OTG_FS->GUSBCFG |= USB_OTG_GUSBCFG_FDMOD;
+    // HNP and SRP disabled (only "peripheral only" supported)
+    USB_OTG_FS->GUSBCFG &= ~(USB_OTG_GUSBCFG_HNPCAP & USB_OTG_GUSBCFG_SRPCAP);
+    // FS timeout calibration field and USB turnaround
+    USB_OTG_FS->GUSBCFG |= USB_OTG_GUSBCFG_TOCAL | USB_OTG_GUSBCFG_TRDT; // FIXME -> They should depend on the AHB frequency
+
+    // FIELDS IN OTG_FS_GINTMSK
+    // OTG interrupt mask and mode mismatch interrupt mask
+    USB_OTG_FS->GINTMSK |= USB_OTG_GINTMSK_OTGINT | USB_OTG_GINTMSK_MMISM;
+}
+
+void device_initialization()
+{
+    // FIELDS IN OTG_FS_DCFG
+    // Device speed set at full speed and non-zero-legth status  OUT handshake
+    USB_OTG_FS->DCFG |= USB_OTG_DCFG_DSPD | USB_OTG_DCFG_NZLSOHSK;
+    
+    // FIELDS IN OTG_FS_GINTMSK
+    // Unmask interrupts
+    USB_OTG_FS->GINTMSK |= USB_OTG_GINTMSK_USBRST | USB_OTG_GINTMSK_ENUMDNEM | USB_OTG_GINTMSK_ESUSPM
+                            | USB_OTG_GINTMSK_USBSUSPM | USB_OTG_GINTMSK_SOFM;
+
+    // Enable the VBUS sensing device
+    USB_OTG_FS->GCCFG |= USB_OTG_GCCFG_VBUSBSEN;
 }
 
 void USBperipheral::reset()
