@@ -41,11 +41,6 @@ namespace mxusb {
 // configuration parameters for the mxgui library
 //
 
-/// Size of buffer for endpoint zero. This constant is put here because it
-/// must be accessible also from user code, to fill in the value in the device
-/// descriptor. The USB standard specifies that only 8,16,32,64 are valid values
-const unsigned short EP0_SIZE=32;
-
 /// Enable descriptor validation.<br>
 /// While developing, this should be kept enabled so that if an error is
 /// introduced in the descriptors, the USB stack will refuse to start and
