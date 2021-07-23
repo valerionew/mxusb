@@ -42,13 +42,6 @@
 
 namespace mxusb {
 
-///\internal
-///Pointer to USB shared memory. Data is organized as 16bit integers, but
-///aligned to 32bit boundaries, leaving 2 bytes gaps.
-///Because of that, even if the access is performed as a pointer to int,
-///the upper two bytes always read as zero
-unsigned int* const USB_RAM=reinterpret_cast<unsigned int*>(0x40006000);
-
 /**
  * \inetrnal
  * This type represents a pointer into the shared memory area.
@@ -76,24 +69,6 @@ unsigned int* const USB_RAM=reinterpret_cast<unsigned int*>(0x40006000);
 class SharedMemoryImpl
 {
 public:
-
-    /// Btable size. Must be 64 bytes to allow space for up to 8 endpoints
-    static const unsigned short BTABLE_SIZE=64;
-    /// Btable address. Must be 8bytes-aligned. Do not change
-    static const shmem_ptr BTABLE_ADDR=0;
-
-    /// Size of endpoint zero buffers (both tx and rx). Must be divisible by 2
-    static const unsigned short EP0_SIZE=mxusb::EP0_SIZE; //in usb_config.h
-    /// Address of tx buffer for endpoint zero (statically allocated)
-    static const shmem_ptr EP0TX_ADDR=BTABLE_ADDR+BTABLE_SIZE;
-    /// Address of rx buffer for endpoint zero (statically allocated)
-    static const shmem_ptr EP0RX_ADDR=EP0TX_ADDR+EP0_SIZE;
-
-    /// \internal base address of dynamic area
-    static const shmem_ptr DYNAMIC_AREA=EP0RX_ADDR+EP0_SIZE;
-    /// \internal address one past the last byte in the dynamic area
-    static const shmem_ptr END=512;
-    
     /**
      * Allocate space for an endpoint
      * \param size memory size required (in bytes)
@@ -169,9 +144,6 @@ public:
 
 private:
     static shmem_ptr currentEnd;/// Pointer to the first free byte
-
-    void copyBytesFrom(unsigned char *dest, shmem_ptr src,unsigned short n);
-    void copyBytesTo(shmem_ptr dest, const unsigned char *src,unsigned short n);
 };
 
 } //namespace mxusb
