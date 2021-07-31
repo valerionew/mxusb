@@ -193,7 +193,7 @@ void DefCtrlPipe::IRQin()
             //We just received the status handshake as a response to a
             //SET_ADDRESS, now it's time to change our address
             //USB->DADDR=setup.wValue | USB_DADDR_EF;
-            USBperipheral::setAddress(setup.wValue | USB_DADDR_EF);
+            USBperipheral::setAddress(setup.wValue);
             if(setup.wValue!=0)
                 DeviceStateImpl::IRQsetState(USBdevice::ADDRESS);
             else DeviceStateImpl::IRQsetState(USBdevice::DEFAULT);

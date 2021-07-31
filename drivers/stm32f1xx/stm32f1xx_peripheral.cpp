@@ -307,7 +307,7 @@ bool EndpointRegister::IRQgetDtogRx() const
 
 void USBperipheral::setAddress(unsigned short addr)
 {
-    USB->DADDR = addr;
+    USB->DADDR = addr | USB_DADDR_EF;
 }
 
 void USBperipheral::configureInterrupts()
