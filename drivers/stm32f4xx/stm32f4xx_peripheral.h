@@ -23,9 +23,9 @@ namespace mxusb {
 enum RegisterType
 {
     BULK=0,
-    CONTROL=USB_EP0R_EP_TYPE_0,
-    ISOCHRONOUS=USB_EP0R_EP_TYPE_1,
-    INTERRUPT=USB_EP0R_EP_TYPE_1 | USB_EP0R_EP_TYPE_0
+    CONTROL=1,
+    ISOCHRONOUS=2,
+    INTERRUPT=3
 };
 
 enum RegisterStatus
@@ -249,6 +249,19 @@ private:
     volatile unsigned int EPR;
 };
 
+
+// STM does not have a constant that points to USB_OTG_DEVICE, so I had to create a constant myself
+USB_OTG_DeviceTypeDef * const USB_OTG_DEVICE = ((USB_OTG_DeviceTypeDef *) USB_OTG_FS_PERIPH_BASE + USB_OTG_DEVICE_BASE);
+
+// Useful method to get an endpoint in struct
+inline static USB_OTG_INEndpointTypeDef* EP_IN(unsigned char ep) {
+    return (USB_OTG_INEndpointTypeDef*)(USB_OTG_FS_PERIPH_BASE + USB_OTG_IN_ENDPOINT_BASE + (ep << 5));
+}
+
+// Useful method to get an endpoint out struct
+inline static USB_OTG_OUTEndpointTypeDef* EP_OUT(unsigned char ep) {
+    return (USB_OTG_OUTEndpointTypeDef*)(USB_OTG_FS_PERIPH_BASE + USB_OTG_OUT_ENDPOINT_BASE + (ep << 5));
+}
 
 
 /**

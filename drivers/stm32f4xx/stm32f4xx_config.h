@@ -9,6 +9,11 @@ namespace mxusb {
 /// Number of hardware endpoints of the stm32
 const int NUM_ENDPOINTS=3;
 
+/// Size of buffer for endpoint zero. This constant is put here because it
+/// must be accessible also from user code, to fill in the value in the device
+/// descriptor. The USB standard specifies that only 8,16,32,64 are valid values
+const unsigned short EP0_SIZE=32;
+
 } //namespace mxusb
 
 #endif //_BOARD_STM32F4DISCOVERY

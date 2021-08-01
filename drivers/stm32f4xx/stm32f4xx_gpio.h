@@ -27,12 +27,14 @@ private:
      * Note: change these to reflect the hardware set up.
      */
     #ifdef _MIOSIX
-    typedef miosix::Gpio<GPIOA_BASE,11> dp;         //USB d+
-    typedef miosix::Gpio<GPIOA_BASE,12> dm;         //USB d-
+    typedef miosix::Gpio<GPIOA_BASE,9> vbus;        //USB vbus
+    typedef miosix::Gpio<GPIOA_BASE,11> dm;         //USB d-
+    typedef miosix::Gpio<GPIOA_BASE,12> dp;         //USB d+
     typedef miosix::Gpio<GPIOB_BASE,14> disconnect; //USB disconnect
     #else //_MIOSIX
-    typedef Gpio<GPIOA_BASE,11> dp;         //USB d+
-    typedef Gpio<GPIOA_BASE,12> dm;         //USB d-
+    typedef miosix::Gpio<GPIOA_BASE,9> vbus;        //USB vbus
+    typedef Gpio<GPIOA_BASE,11> dm;         //USB d-
+    typedef Gpio<GPIOA_BASE,12> dp;         //USB d+
     typedef Gpio<GPIOB_BASE,14> disconnect; //USB disconnect
     #endif //_MIOSIX
 
@@ -46,8 +48,9 @@ public:
         #ifdef _MIOSIX
         using namespace miosix;
         #endif //_MIOSIX
-        //Enable portB (USB disconnect) and afio
-        RCC->APB2ENR |= RCC_APB2ENR_IOPBEN | RCC_APB2ENR_AFIOEN;
+
+        //Enable port A of GPIO. It includes leds, vbus, dp and dm.
+        RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN;
 
         disconnect::mode(Mode::OPEN_DRAIN);
         disconnect::high();

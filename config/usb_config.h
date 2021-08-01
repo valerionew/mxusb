@@ -28,6 +28,9 @@
 #ifndef USB_CONFIG_H
 #define	USB_CONFIG_H
 
+#include <drivers/stm32f1xx/stm32f1xx_config.h>
+#include <drivers/stm32f4xx/stm32f4xx_config.h>
+
 #define USB_CONFIG_VERSION 100
 
 /**
