@@ -305,6 +305,12 @@ public:
 
     static void ep0setRxBuffer();
 
+    /**
+     * \brief IRQ on USB reset from the host. It should be triggered in ten milliseconds at the beginning of the setup,
+     * but I think it's better to handle it with an interrupt, as long as it is a generic USB reset.
+     */
+    static void IRQUSBReset();
+
 private:
     static void core_initialization();
 

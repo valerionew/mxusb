@@ -399,6 +399,28 @@ void USBperipheral::reset()
     // USB->CNTR=USB_CNTR_RESETM;
 }
 
+void USBperipheral::IRQUSBReset()
+{
+    //Set NAK bit for all out endpoints
+    for (int i = 0; i<NUM_ENDPOINTS; i++)
+    {
+        EP_OUT(i)->DOEPCTL |= USB_OTG_DOEPCTL_SNAK;
+    }
+
+    //Unmask interrupt bits
+    USB_OTG_DEVICE->DAINTMSK |= 1<<0;   // control 0 IN endpoint
+    USB_OTG_DEVICE->DAINTMSK |= 1<<16;  // control 0 OUT endpoint
+    USB_OTG_DEVICE->DOEPMSK |= USB_OTG_DOEPMSK_STUPM;
+    USB_OTG_DEVICE->DOEPMSK |= USB_OTG_DOEPMSK_XFRCM;
+    USB_OTG_DEVICE->DIEPMSK |= USB_OTG_DIEPMSK_XFRCM;
+    USB_OTG_DEVICE->DIEPMSK |= USB_OTG_DIEPMSK_TOM; // STM typed TOC instead of TOM in the documentation: be careful
+
+    // TODO -> Setup data FIFO RAM
+
+    //EP0 able to receive 3 back-to-back SETUP packages
+    EP_OUT(0)->DOEPTSIZ |= USB_OTG_DOEPTSIZ_STUPCNT;
+}
+
 void USBperipheral::disable()
 {
     // USB->DADDR=0;  //Clear EF bit
