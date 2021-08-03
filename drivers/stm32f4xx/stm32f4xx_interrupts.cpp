@@ -91,6 +91,7 @@ void USBirqHandler()
         unsigned char epNum = pop & USB_OTG_GRXSTSP_EPNUM;
         switch ((pop & USB_OTG_GRXSTSP_PKTSTS) >> 17) {
             case 0x02: // OUT data packet received
+            {
                 EndpointImpl *epi = EndpointImpl::IRQget(epNum);
                 EP_OUT(epNum)->DOEPINT = USB_OTG_DOEPINT_XFRC; // Clear interrupt flag
 
@@ -100,6 +101,7 @@ void USBirqHandler()
                 callbacks->IRQendpoint(epNum,Endpoint::OUT);
                 epi->IRQwakeWaitingThreadOnOutEndpoint();
                 break;
+            }
             case 0x03: // OUT transfer completed
                 break;
             case 0x04: // SETUP transaction completed
