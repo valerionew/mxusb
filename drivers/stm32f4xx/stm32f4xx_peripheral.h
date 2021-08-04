@@ -251,7 +251,7 @@ private:
 
 
 // STM does not have a constant that points to USB_OTG_DEVICE, so I had to create a constant myself
-USB_OTG_DeviceTypeDef * const USB_OTG_DEVICE = ((USB_OTG_DeviceTypeDef *) USB_OTG_FS_PERIPH_BASE + USB_OTG_DEVICE_BASE);
+USB_OTG_DeviceTypeDef * const USB_OTG_DEVICE = (USB_OTG_DeviceTypeDef *) (USB_OTG_FS_PERIPH_BASE + USB_OTG_DEVICE_BASE);
 
 // Useful method to get an endpoint in struct
 inline static USB_OTG_INEndpointTypeDef* EP_IN(unsigned char ep) {

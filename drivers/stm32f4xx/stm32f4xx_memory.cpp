@@ -150,6 +150,8 @@ const shmem_ptr SharedMemoryImpl::getEP0RxAddr()
     return SharedMemoryImpl::EP0RX_ADDR;
 }*/
 
+shmem_ptr SharedMemoryImpl::currentEnd = 0;
+
 } //namespace mxusb
 
 #endif //_BOARD_STM32F4DISCOVERY
