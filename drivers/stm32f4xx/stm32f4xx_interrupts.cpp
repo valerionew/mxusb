@@ -53,6 +53,9 @@ static void IRQhandleReset()
     USB_OTG_DEVICE->DOEPMSK |= (USB_OTG_DOEPMSK_XFRCM | USB_OTG_DOEPMSK_STUPM);
     USB_OTG_DEVICE->DIEPMSK |= (USB_OTG_DIEPMSK_XFRCM | USB_OTG_DIEPMSK_TOM); // STM typed TOC instead of TOM in the documentation: be careful
 
+    //Wait for the AHB bus to be ready, it takes some milliseconds
+    // while((USB_OTG_FS->GRSTCTL & USB_OTG_GRSTCTL_AHBIDL) == 0);
+
     //Device is now in the default address state
     DeviceStateImpl::IRQsetState(USBdevice::DEFAULT);
 

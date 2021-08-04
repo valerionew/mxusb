@@ -340,14 +340,24 @@ bool USBperipheral::enable()
     // RCC->APB1ENR |= RCC_APB1ENR_USBEN;
     // return true;
 
+    iprintf("Inside enable\n");
     power_on();
+    iprintf("Power on finished\n");
+
+    iprintf("Periph base: %lux\n", USB_OTG_FS_PERIPH_BASE);
+    iprintf("Device base: %lux\n", USB_OTG_DEVICE_BASE);
+    iprintf("sum: %lux\n", USB_OTG_FS_PERIPH_BASE+USB_OTG_DEVICE_BASE);
+    iprintf("access: %lu\n", USB_OTG_DEVICE);
+    iprintf("access: %lu\n", &(USB_OTG_DEVICE->DCFG));
     
     core_initialization();
+    iprintf("Core initialization finished\n");
 
     // Current mode of operation == device
     if ((USB_OTG_FS->GINTSTS & USB_OTG_GINTSTS_CMOD) == 0)
     {
         device_initialization();
+        iprintf("Device initialization finished\n");
         return true;
         // After that, the endpoint initialization must be done at the USB reset signal.
     }
@@ -363,9 +373,9 @@ void USBperipheral::power_on()
     // Enable clock to OTG FS peripheral
     RCC->AHB2ENR |= RCC_AHB2ENR_OTGFSEN;
 
-    // Switch on full-speed transceiver module of PHY.
-    // ST switch on power using the bit "power down", very weird and tricky...
-    USB_OTG_FS->GCCFG |= USB_OTG_GCCFG_PWRDWN;
+    // Reset the power and clock gating control register (I do this to avoid spurious behaviour)
+    // ST did not create a struct for this register and so it has to be accessed in a raw way
+    *((uint32_t*)(USB_OTG_FS_PERIPH_BASE + USB_OTG_PCGCCTL_BASE)) = 0;
 }
 
 void USBperipheral::core_initialization()
@@ -373,17 +383,21 @@ void USBperipheral::core_initialization()
     // FIELDS IN OTG_FS_GAHBCFG REGISTER
     // Global interrupt mask bit GINTMSK = 1
     USB_OTG_FS->GAHBCFG |= USB_OTG_GAHBCFG_GINT;
-    // Periodic and non-periodic TxFIFO empty level
-    // NB: periodic TxFIFO empty level is only accessible in host mode, and the non-periodic is accessible in both mode. The documentation wants only the periodic FIFO to be programmed, along with the RxFIFO non-empty level. The RxFIFO non-empty level, though, is not writable. It's strange and I think they wanted to have the non-periodic to be programmed and not the RxFIFO. Anyway, this is weird, again.
-    USB_OTG_FS->GAHBCFG |= USB_OTG_GAHBCFG_PTXFELVL | USB_OTG_GAHBCFG_TXFELVL;
+    // Only TxFIFO empty level is programmed, as the Periodic TxFIFO empty level is only accessed in host mode
+    USB_OTG_FS->GAHBCFG |= USB_OTG_GAHBCFG_TXFELVL;
 
     // FIELDS IN OTG_FS_GUSBCFG
-    // Peripheral only mode forced
+    // Peripheral only mode forced and then wait for the change to take effect (it takes at least 25 ms).
+    // I think it is better to proceed only in a known state. An other solution could have been to avoid checking if the device mode is active, as we already forced it.
     USB_OTG_FS->GUSBCFG |= USB_OTG_GUSBCFG_FDMOD;
+    while ((USB_OTG_FS->GINTSTS & USB_OTG_GINTSTS_CMOD) != 0) ;
+
     // HNP and SRP disabled (only "peripheral only" supported)
-    USB_OTG_FS->GUSBCFG &= ~(USB_OTG_GUSBCFG_HNPCAP & USB_OTG_GUSBCFG_SRPCAP);
+    USB_OTG_FS->GUSBCFG &= ~(USB_OTG_GUSBCFG_HNPCAP | USB_OTG_GUSBCFG_SRPCAP);
     // FS timeout calibration field and USB turnaround
-    USB_OTG_FS->GUSBCFG |= USB_OTG_GUSBCFG_TOCAL | USB_OTG_GUSBCFG_TRDT; // FIXME -> They should depend on the AHB frequency
+    // FIXME  comment -> I didn't understand how to deal with them, I copied the values from another programming model
+    USB_OTG_FS->GUSBCFG |= 5; // TOCAL value = 5
+    USB_OTG_FS->GUSBCFG |= 15<<10; // TRDT value = 15
 
     // FIELDS IN OTG_FS_GINTMSK
     // OTG interrupt mask and mode mismatch interrupt mask
@@ -396,13 +410,19 @@ void USBperipheral::device_initialization()
     // Device speed set at full speed and non-zero-length status  OUT handshake
     USB_OTG_DEVICE->DCFG |= USB_OTG_DCFG_DSPD | USB_OTG_DCFG_NZLSOHSK;
     
+    // Clear pending interrupts
+    USB_OTG_FS->GINTSTS = 0xFFFFFFFF;
+
     // FIELDS IN OTG_FS_GINTMSK
     // Unmask interrupts
     USB_OTG_FS->GINTMSK |= USB_OTG_GINTMSK_USBRST | USB_OTG_GINTMSK_ENUMDNEM | USB_OTG_GINTMSK_ESUSPM
-                            | USB_OTG_GINTMSK_USBSUSPM | USB_OTG_GINTMSK_SOFM;
+                            | USB_OTG_GINTMSK_USBSUSPM | USB_OTG_GINTMSK_SOFM | USB_OTG_GINTMSK_RXFLVLM;
 
     // Enable the VBUS sensing device
     USB_OTG_FS->GCCFG |= USB_OTG_GCCFG_VBUSBSEN;
+    // Switch on full-speed transceiver module of PHY.
+    // ST switch on power using the bit "power down", very weird and tricky...
+    USB_OTG_FS->GCCFG |= USB_OTG_GCCFG_PWRDWN;
 }
 
 void USBperipheral::reset()
