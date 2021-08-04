@@ -49,17 +49,15 @@ static void IRQhandleReset()
     // USB->CNTR=USB_CNTR_CTRM | USB_CNTR_SUSPM | USB_CNTR_WKUPM | USB_CNTR_RESETM;
 
     // Unmask RX and TX interrupts on EP0
-    USB_OTG_DEVICE->DAINTMSK = 0x00010001;
-    USB_OTG_DEVICE->DIEPMSK = USB_OTG_DIEPMSK_XFRCM;
-    USB_OTG_DEVICE->DOEPMSK = USB_OTG_DOEPMSK_STUPM;
-    USB_OTG_DEVICE->DOEPMSK = USB_OTG_DOEPMSK_XFRCM;
-    USB_OTG_DEVICE->DIEPMSK = USB_OTG_DIEPMSK_TOM; // STM typed TOC instead of TOM in the documentation: be careful
+    USB_OTG_DEVICE->DAINTMSK |= 0x00010001;
+    USB_OTG_DEVICE->DOEPMSK |= (USB_OTG_DOEPMSK_XFRCM | USB_OTG_DOEPMSK_STUPM);
+    USB_OTG_DEVICE->DIEPMSK |= (USB_OTG_DIEPMSK_XFRCM | USB_OTG_DIEPMSK_TOM); // STM typed TOC instead of TOM in the documentation: be careful
 
     //Device is now in the default address state
     DeviceStateImpl::IRQsetState(USBdevice::DEFAULT);
 
     //Set STUPCNT=3 to receive up to 3 back-to-back SETUP packets
-    EP_OUT(0)->DOEPTSIZ = 3 << 29;
+    EP_OUT(0)->DOEPTSIZ = EP0_SIZE | USB_OTG_DOEPTSIZ_PKTCNT | USB_OTG_DOEPTSIZ_STUPCNT;
 }
 
 /**
@@ -82,7 +80,15 @@ void USBirqHandler()
     else if (status & USB_OTG_GINTSTS_ENUMDNE)
     {
         USB_OTG_FS->GINTSTS = USB_OTG_GINTSTS_ENUMDNE; //Clear interrupt flag
-        // TODO
+
+        uint8_t size;
+        if (EP0_SIZE == 8) size = 0x03;
+        if (EP0_SIZE == 16) size = 0x02;
+        if (EP0_SIZE == 32) size = 0x01;
+        if (EP0_SIZE == 64) size = 0x00;
+
+        EP_IN(0)->DIEPCTL = size | USB_OTG_DIEPCTL_EPENA;
+        EP_OUT(0)->DOEPCTL = size | USB_OTG_DOEPCTL_EPENA | USB_OTG_DOEPCTL_CNAK; // FIXME: CNAK should be left?
     }
     else if (status & USB_OTG_GINTSTS_RXFLVL)
     {
