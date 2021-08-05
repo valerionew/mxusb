@@ -419,7 +419,9 @@ void USBperipheral::device_initialization()
                             | USB_OTG_GINTMSK_USBSUSPM | USB_OTG_GINTMSK_SOFM | USB_OTG_GINTMSK_RXFLVLM;
 
     // Enable the VBUS sensing device
-    USB_OTG_FS->GCCFG |= USB_OTG_GCCFG_VBUSBSEN;
+    // USB_OTG_FS->GCCFG |= USB_OTG_GCCFG_VBUSBSEN;
+    // Enable the VBUS sensing device
+    USB_OTG_FS->GCCFG |= USB_OTG_GCCFG_NOVBUSSENS;
     // Switch on full-speed transceiver module of PHY.
     // ST switch on power using the bit "power down", very weird and tricky...
     USB_OTG_FS->GCCFG |= USB_OTG_GCCFG_PWRDWN;
