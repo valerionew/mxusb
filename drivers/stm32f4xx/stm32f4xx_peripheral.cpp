@@ -372,6 +372,9 @@ void USBperipheral::power_on()
 {
     // Enable clock to OTG FS peripheral
     RCC->AHB2ENR |= RCC_AHB2ENR_OTGFSEN;
+    
+    // FIXME: is this enable really necessary?
+    RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
 
     // Reset the power and clock gating control register (I do this to avoid spurious behaviour)
     // ST did not create a struct for this register and so it has to be accessed in a raw way

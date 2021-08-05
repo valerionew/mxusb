@@ -52,7 +52,7 @@ public:
         #endif //_MIOSIX
 
         // Enable port A of GPIO. It includes leds, vbus, dp and dm.
-        // RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN;
+        RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN;
 
         // //alternate function
         // GPIOA->MODER |= GPIO_MODER_MODER8_1 | GPIO_MODER_MODER9_1 | GPIO_MODER_MODER10_1
