@@ -77,7 +77,6 @@ void USBirqHandler()
     {
         // reset event
         IRQhandleReset();
-        callbacks->IRQreset();
         return; // reset causes all interrupt flags to be ignored
     }
     else if (status & USB_OTG_GINTSTS_ENUMDNE)
@@ -92,6 +91,9 @@ void USBirqHandler()
 
         EP_IN(0)->DIEPCTL = size | USB_OTG_DIEPCTL_EPENA;
         EP_OUT(0)->DOEPCTL = size | USB_OTG_DOEPCTL_EPENA | USB_OTG_DOEPCTL_CNAK; // FIXME: CNAK should be left?
+
+        callbacks->IRQreset();
+        return; // reset causes all interrupt flags to be ignored
     }
     else if (status & USB_OTG_GINTSTS_RXFLVL)
     {
