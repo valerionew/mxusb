@@ -99,12 +99,14 @@ bool Endpoint::isOutSideEnabled() const
 
 unsigned short Endpoint::inSize() const
 {
-    return pImpl->getSizeOfInBuf();
+    //return pImpl->getSizeOfInBuf();
+    return pImpl->getSizeOfBuf();
 }
 
 unsigned short Endpoint::outSize() const
 {
-    return pImpl->getSizeOfOutBuf();
+    //return pImpl->getSizeOfOutBuf();
+    return pImpl->getSizeOfBuf();
 }
 
 bool Endpoint::write(const unsigned char *data, int size, int& written)

@@ -21,7 +21,6 @@ void EndpointImpl::IRQdeconfigureAll()
     SharedMemory::instance().reset();
 }
 
-
 void EndpointImpl::IRQconfigureAll(const unsigned char *desc)
 {
     const unsigned short wTotalLength=toShort(&desc[2]);
@@ -40,65 +39,14 @@ void EndpointImpl::IRQconfigureAll(const unsigned char *desc)
         }
         if(desc[1]!=Descriptor::ENDPOINT) continue;
         const unsigned char epNum=desc[2] & 0xf;
-        EndpointImpl::get(epNum)->IRQconfigure(desc);
+        EndpointImpl::get(epNum)->IRQconfigure(desc, NUM_ENDPOINTS);
     }
 }
 
 void EndpointImpl::IRQdeconfigure(int epNum)
 {
     USB->endpoint[epNum]=epNum;
-    this->data.enabledIn=0;
-    this->data.enabledOut=0;
-    this->data.epNumber=epNum;
-    this->IRQwakeWaitingThreadOnInEndpoint();
-    this->IRQwakeWaitingThreadOnOutEndpoint();
-}
-
-void EndpointImpl::IRQconfigure(const unsigned char *desc)
-{
-    const unsigned char bEndpointAddress=desc[2];
-    unsigned char bmAttributes=desc[3];
-    Tracer::IRQtrace(Ut::CONFIGURING_EP,bEndpointAddress,bmAttributes);
-
-    const unsigned char addr=bEndpointAddress & 0xf;
-    if(addr==0 || addr>NUM_ENDPOINTS-1 || addr!=this->data.epNumber)
-    {
-        Tracer::IRQtrace(Ut::DESC_ERROR);
-        return; //Invalid ep #, or called with an endpoint with a wrong #
-    }
-
-    if((this->data.enabledIn==1  && ((bEndpointAddress & 0x80)==1)) ||
-       (this->data.enabledOut==1 && ((bEndpointAddress & 0x80)==0)))
-    {
-        Tracer::IRQtrace(Ut::DESC_ERROR);
-        return; //Trying to configure an ep direction twice
-    }
-
-    if((this->data.enabledIn==1 || this->data.enabledOut==1))
-    {
-        //We're trying to enable both sides of an endpoint.
-        //This is only possible if both sides are of type INTERRUPT
-        if((bmAttributes & Descriptor::TYPE_MASK)!=Descriptor::INTERRUPT ||
-            this->data.type!=Descriptor::INTERRUPT)
-        {
-            Tracer::IRQtrace(Ut::DESC_ERROR);
-            return; //Trying to enable both sides of a non INTERRUPT ep
-        }
-    }
-
-    switch(bmAttributes & Descriptor::TYPE_MASK)
-    {
-        case Descriptor::INTERRUPT:
-            IRQconfigureInterruptEndpoint(desc);
-            break;
-        case Descriptor::BULK:
-            IRQconfigureBulkEndpoint(desc);
-            break;
-        case Descriptor::CONTROL:
-        case Descriptor::ISOCHRONOUS:
-            Tracer::IRQtrace(Ut::DESC_ERROR);
-            return; //CONTROL and ISOCHRONOUS endpoints not supported
-    }
+    EndpointBaseImpl::IRQdeconfigure(epNum);
 }
 
 bool EndpointImpl::write(const unsigned char *data, int size, int& written)
@@ -114,7 +62,8 @@ bool EndpointImpl::write(const unsigned char *data, int size, int& written)
         //INTERRUPT
         if(stat!=RegisterStatus::NAK) return true;//No error, just buffer full
         //written=min<unsigned int>(size,IRQgetSizeOfInBuf());
-        written=min<unsigned int>(size,getSizeOfInBuf());
+        //written=min<unsigned int>(size,getSizeOfInBuf());
+        written=min<unsigned int>(size,getSizeOfBuf());
         //SharedMemory::instance().copyBytesTo(IRQgetInBuf(),data,written);
         SharedMemory::instance().copyBytesTo_NEW(IRQgetData().epNumber,data,written,0);
         epr.IRQsetTxDataSize(written);
@@ -140,13 +89,15 @@ bool EndpointImpl::write(const unsigned char *data, int size, int& written)
         if(epr.IRQgetDtogRx()) //Actually, SW_BUF
         {
             //written=min<unsigned int>(size,IRQgetSizeOfBuf1());
-            written=min<unsigned int>(size,getSizeOfOutBuf());
+            //written=min<unsigned int>(size,getSizeOfOutBuf());
+            written=min<unsigned int>(size,getSizeOfBuf());
             //SharedMemory::instance().copyBytesTo(IRQgetBuf1(),data,written);
             SharedMemory::instance().copyBytesTo_NEW(IRQgetData().epNumber,data,written,1);
             epr.IRQsetTxDataSize1(written);
         } else {
             //written=min<unsigned int>(size,IRQgetSizeOfBuf0());
-            written=min<unsigned int>(size,getSizeOfOutBuf());
+            //written=min<unsigned int>(size,getSizeOfOutBuf());
+            written=min<unsigned int>(size,getSizeOfBuf());
             //SharedMemory::instance().copyBytesTo(IRQgetBuf0(),data,written);
             SharedMemory::instance().copyBytesTo_NEW(IRQgetData().epNumber,data,written,0);
             epr.IRQsetTxDataSize0(written);
