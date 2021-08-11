@@ -45,7 +45,28 @@ void EndpointImpl::IRQconfigureAll(const unsigned char *desc)
 
 void EndpointImpl::IRQdeconfigure(int epNum)
 {
-    // USB->endpoint[epNum]=epNum;
+    volatile USB_OTG_INEndpointTypeDef *epi = EP_IN(epNum);
+    volatile USB_OTG_OUTEndpointTypeDef *epo = EP_OUT(epNum);
+
+    // disable interrupts
+    USB_OTG_DEVICE->DAINTMSK &= ~(0x10001 << epNum);
+
+    // deconfigure TX side
+    epi->DIEPCTL &= ~(USB_OTG_DIEPCTL_USBAEP);
+    if ((epNum != 0) && (epi->DIEPCTL & USB_OTG_DIEPCTL_EPENA)) {
+        epi->DIEPCTL = USB_OTG_DIEPCTL_EPDIS;
+    }
+    // clear interrupts
+    epi->DIEPINT = 0xFF;
+
+    // deconfigure RX side
+    epo->DOEPCTL &= ~(USB_OTG_DOEPCTL_USBAEP);
+    if ((epNum != 0) && (epo->DOEPCTL & USB_OTG_DOEPCTL_EPENA)) {
+        epo->DOEPCTL = USB_OTG_DOEPCTL_EPDIS;
+    }
+    // clear interrupts
+    epo->DOEPINT = 0xFF;
+
     EndpointBaseImpl::IRQdeconfigure(epNum);
 }
 
@@ -147,86 +168,85 @@ bool EndpointImpl::read(unsigned char *data, int& readBytes)
 
 void EndpointImpl::IRQconfigureInterruptEndpoint(const unsigned char *desc)
 {
-    // //Get endpoint data
-    // const unsigned char bEndpointAddress=desc[2];
-    // const unsigned char addr=bEndpointAddress & 0xf;
-    // const unsigned short wMaxPacketSize=toShort(&desc[4]);
+    //Get endpoint data
+    const unsigned char bEndpointAddress=desc[2];
+    const unsigned char addr=bEndpointAddress & 0xf;
+    const unsigned short wMaxPacketSize=toShort(&desc[4]);
 
-    // const shmem_ptr ptr=SharedMemory::instance().allocate(wMaxPacketSize);
-    // if(ptr==0 || wMaxPacketSize==0)
-    // {
-    //     Tracer::IRQtrace(Ut::OUT_OF_SHMEM);
-    //     return; //Out of memory, or wMaxPacketSize==0
-    // }
+    this->data.type=Descriptor::INTERRUPT;
+    this->bufSize=wMaxPacketSize;
 
-    // this->data.type=Descriptor::INTERRUPT;
+    if(bEndpointAddress & 0x80)
+    {
+        // IN endpoint
 
-    // USB->endpoint[addr].IRQclearEpKind();
-    // USB->endpoint[addr].IRQsetType(RegisterType::INTERRUPT);
+        // allocate TX FIFO
+        const shmem_ptr ptr = SharedMemory::instance().allocate(addr, wMaxPacketSize);
+        if(ptr==0 || wMaxPacketSize==0) {
+            Tracer::IRQtrace(Ut::OUT_OF_SHMEM);
+            return; //Out of memory, or wMaxPacketSize==0
+        }
 
-    // if(bEndpointAddress & 0x80)
-    // {
-    //     //IN endpoint
-    //     USB->endpoint[addr].IRQsetDtogTx(false);
-    //     USB->endpoint[addr].IRQsetTxBuffer(ptr,0);
-    //     USB->endpoint[addr].IRQsetTxStatus(RegisterStatus::NAK);
-    //     this->buf0=ptr;
-    //     this->size0=wMaxPacketSize;
-    //     this->data.enabledIn=1;
-    // } else {
-    //     //OUT endpoint
-    //     USB->endpoint[addr].IRQsetDtogRx(false);
-    //     USB->endpoint[addr].IRQsetRxBuffer(ptr,wMaxPacketSize);
-    //     USB->endpoint[addr].IRQsetRxStatus(RegisterStatus::VALID);
-    //     this->buf1=ptr;
-    //     this->size1=wMaxPacketSize;
-    //     this->data.enabledOut=1;
-    // }
+        USB_OTG_DEVICE->DAINTMSK |= (0x0001 << addr);
+
+        EP_IN(addr)->DIEPCTL = (RegisterType::INTERRUPT << 18) | wMaxPacketSize |
+                                USB_OTG_DIEPCTL_SD0PID_SEVNFRM | USB_OTG_DIEPCTL_USBAEP |
+                                (addr << 22) | USB_OTG_DIEPCTL_SNAK;
+
+        this->data.enabledIn=1;
+    }
+    else
+    {
+        // OUT endpoint
+
+        EP_OUT(addr)->DOEPCTL = (RegisterType::INTERRUPT << 18) | wMaxPacketSize |
+                                USB_OTG_DOEPCTL_SD0PID_SEVNFRM | USB_OTG_DOEPCTL_USBAEP |
+                                USB_OTG_DOEPCTL_EPENA | USB_OTG_DOEPCTL_CNAK;
+
+        this->data.enabledOut=1;
+    }
 }
 
 void EndpointImpl::IRQconfigureBulkEndpoint(const unsigned char *desc)
 {
-    // //Get endpoint data
-    // const unsigned char bEndpointAddress=desc[2];
-    // const unsigned char addr=bEndpointAddress & 0xf;
-    // const unsigned short wMaxPacketSize=toShort(&desc[4]);
+    //Get endpoint data
+    const unsigned char bEndpointAddress=desc[2];
+    const unsigned char addr=bEndpointAddress & 0xf;
+    const unsigned short wMaxPacketSize=toShort(&desc[4]);
 
-    // const shmem_ptr ptr0=SharedMemory::instance().allocate(wMaxPacketSize);
-    // const shmem_ptr ptr1=SharedMemory::instance().allocate(wMaxPacketSize);
-    // if(ptr0==0 || ptr1==0 || wMaxPacketSize==0)
-    // {
-    //     Tracer::IRQtrace(Ut::OUT_OF_SHMEM);
-    //     return; //Out of memory, or wMaxPacketSize==0
-    // }
+    this->data.type=Descriptor::BULK;
+    this->bufSize=wMaxPacketSize;
+    this->bufCount=0;
 
-    // this->data.type=Descriptor::BULK;
-    // this->buf0=ptr0;
-    // this->size0=wMaxPacketSize;
-    // this->buf1=ptr1;
-    // this->size1=wMaxPacketSize;
+    if(bEndpointAddress & 0x80)
+    {
+        // IN endpoint
 
-    // USB->endpoint[addr].IRQsetType(RegisterType::BULK);
-    // USB->endpoint[addr].IRQsetEpKind();//Enpoint is double buffered
+        // allocate TX FIFO
+        const shmem_ptr ptr = SharedMemory::instance().allocate(addr, wMaxPacketSize);
+        if(ptr==0 || wMaxPacketSize==0) {
+            Tracer::IRQtrace(Ut::OUT_OF_SHMEM);
+            return; //Out of memory, or wMaxPacketSize==0
+        }
 
-    // if(bEndpointAddress & 0x80)
-    // {
-    //     //IN endpoint
-    //     USB->endpoint[addr].IRQsetDtogTx(false);
-    //     USB->endpoint[addr].IRQsetDtogRx(false); //Actually, SW_BUF
-    //     USB->endpoint[addr].IRQsetTxBuffer0(ptr0,0);
-    //     USB->endpoint[addr].IRQsetTxBuffer1(ptr1,0);
-    //     USB->endpoint[addr].IRQsetTxStatus(RegisterStatus::NAK);
-    //     this->data.enabledIn=1;
-    // } else {
-    //     //OUT endpoint
-    //     USB->endpoint[addr].IRQsetDtogRx(false);
-    //     USB->endpoint[addr].IRQsetDtogTx(false); //Actually, SW_BUF
-    //     USB->endpoint[addr].IRQsetRxBuffer0(ptr0,wMaxPacketSize);
-    //     USB->endpoint[addr].IRQsetRxBuffer1(ptr1,wMaxPacketSize);
-    //     USB->endpoint[addr].IRQsetRxStatus(RegisterStatus::VALID);
-    //     this->data.enabledOut=1;
-    // }
-    // this->bufCount=0;
+        USB_OTG_DEVICE->DAINTMSK |= (0x0001 << addr);
+
+        EP_IN(addr)->DIEPCTL = (RegisterType::BULK << 18) | wMaxPacketSize |
+                                USB_OTG_DIEPCTL_SD0PID_SEVNFRM | USB_OTG_DIEPCTL_USBAEP |
+                                (addr << 22) | USB_OTG_DIEPCTL_SNAK;
+
+        this->data.enabledIn=1;
+    }
+    else
+    {
+        // OUT endpoint
+
+        EP_OUT(addr)->DOEPCTL = (RegisterType::BULK << 18) | wMaxPacketSize |
+                                USB_OTG_DOEPCTL_SD0PID_SEVNFRM | USB_OTG_DOEPCTL_USBAEP |
+                                USB_OTG_DOEPCTL_EPENA | USB_OTG_DOEPCTL_CNAK;
+
+        this->data.enabledOut=1;
+    }
 }
 
 EndpointImpl EndpointImpl::endpoints[NUM_ENDPOINTS-1];

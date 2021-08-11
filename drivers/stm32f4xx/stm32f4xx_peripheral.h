@@ -22,12 +22,13 @@ namespace mxusb {
  */
 enum RegisterType
 {
-    BULK=0,
-    CONTROL=1,
-    ISOCHRONOUS=2,
+    CONTROL=0,
+    ISOCHRONOUS=1,
+    BULK=2,
     INTERRUPT=3
 };
 
+// TODO: remove RegisterStatus enum because it is not used in F4 driver
 enum RegisterStatus
 {
     DISABLED=0,
