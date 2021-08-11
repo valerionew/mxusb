@@ -170,6 +170,7 @@ void EndpointImpl::IRQconfigureInterruptEndpoint(const unsigned char *desc)
     }
 
     this->data.type=Descriptor::INTERRUPT;
+    this->bufSize=wMaxPacketSize;
 
     USB->endpoint[addr].IRQclearEpKind();
     USB->endpoint[addr].IRQsetType(RegisterType::INTERRUPT);
@@ -182,7 +183,6 @@ void EndpointImpl::IRQconfigureInterruptEndpoint(const unsigned char *desc)
         USB->endpoint[addr].IRQsetTxStatus(RegisterStatus::NAK);
         //this->buf0=ptr;
         //this->size0=wMaxPacketSize;
-        this->bufSize=wMaxPacketSize;
         this->data.enabledIn=1;
     } else {
         //OUT endpoint
