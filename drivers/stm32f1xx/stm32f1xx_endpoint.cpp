@@ -133,7 +133,7 @@ bool EndpointImpl::read(unsigned char *data, int& readBytes)
         if(stat!=RegisterStatus::NAK) return true; //No errors, just no data
         readBytes=epr.IRQgetReceivedBytes();
         //SharedMemory::instance().copyBytesFrom(data,IRQgetOutBuf(),readBytes);
-        SharedMemory::instance().copyBytesFrom_NEW(data,IRQgetData().epNumber,readBytes,1);
+        SharedMemory::instance().copyBytesFrom_NEW(data,IRQgetData().epNumber,readBytes,0);
         epr.IRQsetRxStatus(RegisterStatus::VALID);
     } else {
         //BULK
