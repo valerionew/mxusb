@@ -133,7 +133,7 @@ bool EndpointImpl::read(unsigned char *data, int& readBytes)
         if(stat!=RegisterStatus::NAK) return true; //No errors, just no data
         readBytes=epr.IRQgetReceivedBytes();
         //SharedMemory::instance().copyBytesFrom(data,IRQgetOutBuf(),readBytes);
-        SharedMemory::instance().copyBytesFrom_NEW(data,IRQgetData().epNumber,readBytes,0);
+        SharedMemory::instance().copyBytesFrom_NEW(data,IRQgetData().epNumber,readBytes,1);
         epr.IRQsetRxStatus(RegisterStatus::VALID);
     } else {
         //BULK
@@ -162,7 +162,8 @@ void EndpointImpl::IRQconfigureInterruptEndpoint(const unsigned char *desc)
     const unsigned char addr=bEndpointAddress & 0xf;
     const unsigned short wMaxPacketSize=toShort(&desc[4]);
 
-    const shmem_ptr ptr=SharedMemory::instance().allocate(addr, wMaxPacketSize,0);
+    unsigned char idx = (bEndpointAddress & 0x80) ? 0 : 1;
+    const shmem_ptr ptr=SharedMemory::instance().allocate(addr, wMaxPacketSize, idx);
     if(ptr==0 || wMaxPacketSize==0)
     {
         Tracer::IRQtrace(Ut::OUT_OF_SHMEM);
