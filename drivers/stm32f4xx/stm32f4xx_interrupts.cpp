@@ -35,12 +35,12 @@ static void IRQhandleReset()
 
     //for(int i=1;i<NUM_ENDPOINTS;i++) EndpointImpl::get(i)->IRQdeconfigure(i);
     //Set NAK bit for all out endpoints
+    // TODO: endpoints should be deconfiguted instead of simply nacked? check manual
     for (int i = 0; i < NUM_ENDPOINTS; i++) {
         EP_OUT(i)->DOEPCTL |= USB_OTG_DOEPCTL_SNAK;
     }
 
     SharedMemory::instance().reset();
-    DefCtrlPipe::IRQdefaultStatus();
 
     // //After a reset device address is zero, enable transaction handling
     // USB->DADDR=0 | USB_DADDR_EF;
@@ -56,11 +56,31 @@ static void IRQhandleReset()
     //Wait for the AHB bus to be ready, it takes some milliseconds
     // while((USB_OTG_FS->GRSTCTL & USB_OTG_GRSTCTL_AHBIDL) == 0);
 
-    //Device is now in the default address state
-    DeviceStateImpl::IRQsetState(USBdevice::DEFAULT);
-
     //Set STUPCNT=3 to receive up to 3 back-to-back SETUP packets
     EP_OUT(0)->DOEPTSIZ = EP0_SIZE | USB_OTG_DOEPTSIZ_PKTCNT | USB_OTG_DOEPTSIZ_STUPCNT;
+}
+
+/**
+ * \internal
+ * Handles USB device ENUM DONE
+ */
+static void IRQhandleEnumDone()
+{
+    USB_OTG_FS->GINTSTS = USB_OTG_GINTSTS_ENUMDNE; //Clear interrupt flag
+
+    DefCtrlPipe::IRQdefaultStatus();
+
+    uint8_t size;
+    if (EP0_SIZE == 8) size = 0x03;
+    if (EP0_SIZE == 16) size = 0x02;
+    if (EP0_SIZE == 32) size = 0x01;
+    if (EP0_SIZE == 64) size = 0x00;
+
+    EP_IN(0)->DIEPCTL = size | USB_OTG_DIEPCTL_EPENA;
+    EP_OUT(0)->DOEPCTL = size | USB_OTG_DOEPCTL_EPENA | USB_OTG_DOEPCTL_CNAK; // FIXME: CNAK should be left?
+
+    //Device is now in the default address state
+    DeviceStateImpl::IRQsetState(USBdevice::DEFAULT);
 }
 
 /**
@@ -81,17 +101,8 @@ void USBirqHandler()
     }
     else if (status & USB_OTG_GINTSTS_ENUMDNE)
     {
-        USB_OTG_FS->GINTSTS = USB_OTG_GINTSTS_ENUMDNE; //Clear interrupt flag
-
-        uint8_t size;
-        if (EP0_SIZE == 8) size = 0x03;
-        if (EP0_SIZE == 16) size = 0x02;
-        if (EP0_SIZE == 32) size = 0x01;
-        if (EP0_SIZE == 64) size = 0x00;
-
-        EP_IN(0)->DIEPCTL = size | USB_OTG_DIEPCTL_EPENA;
-        EP_OUT(0)->DOEPCTL = size | USB_OTG_DOEPCTL_EPENA | USB_OTG_DOEPCTL_CNAK; // FIXME: CNAK should be left?
-
+        // enumeration done event
+        IRQhandleEnumDone();
         callbacks->IRQreset();
         return; // reset causes all interrupt flags to be ignored
     }
@@ -103,23 +114,32 @@ void USBirqHandler()
         switch ((pop & USB_OTG_GRXSTSP_PKTSTS) >> 17) {
             case 0x02: // OUT data packet received
             {
-                EndpointImpl *epi = EndpointImpl::IRQget(epNum);
                 EP_OUT(epNum)->DOEPINT = USB_OTG_DOEPINT_XFRC; // Clear interrupt flag
 
-                //NOTE: Decrement buffer before the callback
-                // TODO: check why the buffer is dec and its behavior
-                epi->IRQincBufferCount();
-                callbacks->IRQendpoint(epNum,Endpoint::OUT);
-                epi->IRQwakeWaitingThreadOnOutEndpoint();
+                if (epNum == 0) {
+                    DefCtrlPipe::IRQstatusNak();
+                    DefCtrlPipe::IRQout();
+                    DefCtrlPipe::IRQrestoreStatus();
+                }
+                else {
+                    EndpointImpl *epi = EndpointImpl::IRQget(epNum);
+                    //NOTE: Increment buffer before the callback
+                    // TODO: check why the buffer is inc and its behavior
+                    epi->IRQincBufferCount();
+                    callbacks->IRQendpoint(epNum,Endpoint::OUT);
+                    epi->IRQwakeWaitingThreadOnOutEndpoint();
+                }
                 break;
             }
             case 0x03: // OUT transfer completed
                 break;
             case 0x04: // SETUP transaction completed
-                DefCtrlPipe::IRQsetup();
+                EP_OUT(epNum)->DOEPCTL |= USB_OTG_DOEPCTL_CNAK | USB_OTG_DOEPCTL_EPENA;
                 break;
             case 0x06: // SETUP data packet received
-                DefCtrlPipe::IRQout();
+                DefCtrlPipe::IRQstatusNak();
+                DefCtrlPipe::IRQsetup();
+                DefCtrlPipe::IRQrestoreStatus();
                 break;
         }
     }
@@ -132,14 +152,16 @@ void USBirqHandler()
                 break;
             }
         }
-
-        EndpointImpl *epi = EndpointImpl::IRQget(epNum);
+        
         EP_IN(epNum)->DIEPINT = USB_OTG_DIEPINT_XFRC; // Clear interrupt flag
 
         if (epNum == 0) {
+            DefCtrlPipe::IRQstatusNak();
             DefCtrlPipe::IRQin();
+            DefCtrlPipe::IRQrestoreStatus();
         }
         else {
+            EndpointImpl *epi = EndpointImpl::IRQget(epNum);
             //NOTE: Decrement buffer before the callback
             // TODO: check why the buffer is dec and its behavior
             epi->IRQdecBufferCount();
