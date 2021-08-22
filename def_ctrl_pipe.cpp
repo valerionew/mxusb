@@ -448,11 +448,11 @@ void DefCtrlPipe::IRQstartInData(const unsigned char* data, unsigned short size)
     //there is the need to send that zero byte packet
     if(size>=EP0_SIZE)
     {
+        //ep.IRQsetTxDataSize(EP0_SIZE);
+        USBperipheral::ep0setTxDataSize(EP0_SIZE);
         //SharedMemory::instance().copyBytesTo(SharedMemoryImpl::EP0TX_ADDR,data,EP0_SIZE);
         //SharedMemory::instance().copyBytesTo(SharedMemory::instance().getEP0TxAddr(),data,EP0_SIZE);
         SharedMemory::instance().copyBytesTo_NEW(0,data,EP0_SIZE);
-        //ep.IRQsetTxDataSize(EP0_SIZE);
-        USBperipheral::ep0setTxDataSize(EP0_SIZE);
         controlState.state=CTR_IN_IN_PROGRESS;
         //The cast is necessary because controlState.ptr is used both for
         //IN and OUT transactions, so it can't be const. When used for IN
@@ -461,11 +461,11 @@ void DefCtrlPipe::IRQstartInData(const unsigned char* data, unsigned short size)
         controlState.size=size-EP0_SIZE;
         Tracer::IRQtrace(Ut::IN_BUF_FILL,0,EP0_SIZE);
     } else {
+        //ep.IRQsetTxDataSize(size);
+        USBperipheral::ep0setTxDataSize(size);
         //SharedMemory::instance().copyBytesTo(SharedMemoryImpl::EP0TX_ADDR,data,size);
         //SharedMemory::instance().copyBytesTo(SharedMemory::instance().getEP0TxAddr(),data,size);
         SharedMemory::instance().copyBytesTo_NEW(0,data,size);
-        //ep.IRQsetTxDataSize(size);
-        USBperipheral::ep0setTxDataSize(size);
         controlState.state=CTR_IN_STATUS_BEGIN;
         Tracer::IRQtrace(Ut::IN_BUF_FILL,0,size);
     }
