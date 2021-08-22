@@ -310,6 +310,8 @@ bool EndpointRegister::IRQgetDtogRx() const
 void USBperipheral::setAddress(unsigned short addr)
 {
     // USB->DADDR = addr;
+    USB_OTG_DEVICE->DCFG &= ~(USB_OTG_DCFG_DAD);
+    USB_OTG_DEVICE->DCFG |= (addr << 4) & USB_OTG_DCFG_DAD;
 }
 
 void USBperipheral::configureInterrupts()
@@ -441,84 +443,100 @@ void USBperipheral::reset()
     // USB->CNTR=USB_CNTR_RESETM;
 }
 
-void USBperipheral::IRQUSBReset()
-{
-    //Set NAK bit for all out endpoints
-    for (int i = 0; i<NUM_ENDPOINTS; i++)
-    {
-        EP_OUT(i)->DOEPCTL |= USB_OTG_DOEPCTL_SNAK;
-    }
-
-    //Unmask interrupt bits
-    USB_OTG_DEVICE->DAINTMSK |= 1<<0;   // control 0 IN endpoint
-    USB_OTG_DEVICE->DAINTMSK |= 1<<16;  // control 0 OUT endpoint
-    USB_OTG_DEVICE->DOEPMSK |= USB_OTG_DOEPMSK_STUPM;
-    USB_OTG_DEVICE->DOEPMSK |= USB_OTG_DOEPMSK_XFRCM;
-    USB_OTG_DEVICE->DIEPMSK |= USB_OTG_DIEPMSK_XFRCM;
-    USB_OTG_DEVICE->DIEPMSK |= USB_OTG_DIEPMSK_TOM; // STM typed TOC instead of TOM in the documentation: be careful
-
-    // TODO -> Setup data FIFO RAM
-
-    //EP0 able to receive 3 back-to-back SETUP packages
-    EP_OUT(0)->DOEPTSIZ |= USB_OTG_DOEPTSIZ_STUPCNT;
-}
-
 void USBperipheral::disable()
 {
     // USB->DADDR=0;  //Clear EF bit
     // USB->CNTR=USB_CNTR_PDWN | USB_CNTR_FRES;
     // USB->ISTR=0; //Clear interrupt flags
     // RCC->APB1ENR &= ~RCC_APB1ENR_USBEN;
+    USB_OTG_DEVICE->DCFG &= ~USB_OTG_DCFG_DAD;
+    USB_OTG_FS->GINTSTS = 0xFFFFFFFF;
+    USB_OTG_FS->GCCFG &= ~USB_OTG_GCCFG_PWRDWN;
+    RCC->AHB2ENR &= ~RCC_AHB2ENR_OTGFSEN;
 }
 
 void USBperipheral::ep0setTxStatus(RegisterStatus status)
 {
     // USB->endpoint[0].IRQsetTxStatus(status);
+    if (status == RegisterStatus::STALL) {
+        EP_IN(0)->DIEPCTL |= USB_OTG_DIEPCTL_STALL;
+    }
+    else if (status == RegisterStatus::NAK) {
+        EP_IN(0)->DIEPCTL |= USB_OTG_DIEPCTL_SNAK;
+    }
+    else if (status == RegisterStatus::VALID) {
+        EP_IN(0)->DIEPCTL |= USB_OTG_DIEPCTL_CNAK;
+    }
 }
 
 void USBperipheral::ep0setRxStatus(RegisterStatus status)
 {
     // USB->endpoint[0].IRQsetRxStatus(status);
+    if (status == RegisterStatus::STALL) {
+        EP_OUT(0)->DOEPCTL |= USB_OTG_DOEPCTL_STALL;
+    }
+    else if (status == RegisterStatus::NAK) {
+        EP_OUT(0)->DOEPCTL |= USB_OTG_DOEPCTL_SNAK;
+    }
+    else if (status == RegisterStatus::VALID) {
+        EP_OUT(0)->DOEPCTL |= USB_OTG_DOEPCTL_CNAK;
+    }
 }
 
 unsigned short USBperipheral::ep0getReceivedBytes()
 {
     // return USB->endpoint[0].IRQgetReceivedBytes();
-    return 0;
+    return ((USB_OTG_FS->GRXSTSR & USB_OTG_GRXSTSP_BCNT) >> 4);
 }
 
 void USBperipheral::ep0reset()
 {
     // USB->endpoint[0] = 0;
+    uint8_t size;
+    if (EP0_SIZE == 8) size = 0x03;
+    if (EP0_SIZE == 16) size = 0x02;
+    if (EP0_SIZE == 32) size = 0x01;
+    if (EP0_SIZE == 64) size = 0x00;
+
+    EP_IN(0)->DIEPCTL = size | USB_OTG_DIEPCTL_EPENA;
+    EP_OUT(0)->DOEPCTL = size | USB_OTG_DOEPCTL_EPENA | USB_OTG_DOEPCTL_CNAK; // FIXME: CNAK should be left?
 }
 
 void USBperipheral::ep0beginStatusTransaction()
 {
+    // TODO: empty method
     // USB->endpoint[0].IRQsetEpKind();
 }
 
 void USBperipheral::ep0endStatusTransaction()
 {
+    // TODO: empty method
     // USB->endpoint[0].IRQclearEpKind();
 }
 
 void USBperipheral::ep0setTxDataSize(unsigned short size)
 {
     // USB->endpoint[0].IRQsetTxDataSize(size);
+    EP_IN(0)->DIEPTSIZ = 0;
+    EP_IN(0)->DIEPTSIZ = size | (1 << 19);
+    EP_IN(0)->DIEPCTL |= USB_OTG_DIEPCTL_EPENA | USB_OTG_DIEPCTL_CNAK;
 }
 
 void USBperipheral::ep0setType(RegisterType type)
 {
+    // TODO: empty method
     // USB->endpoint[0].IRQsetType(type);
 }
 
 void USBperipheral::ep0setTxBuffer()
 {
+    // TODO: empty method
     // USB->endpoint[0].IRQsetTxBuffer(SharedMemory::instance().getEP0TxAddr(), EP0_SIZE);
 }
 
 void USBperipheral::ep0setRxBuffer()
 {
+    // TODO: empty method
     // USB->endpoint[0].IRQsetRxBuffer(SharedMemory::instance().getEP0RxAddr(), EP0_SIZE);
 }
 
