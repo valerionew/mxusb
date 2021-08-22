@@ -111,9 +111,6 @@ void USBirqHandler()
                 }
                 else {
                     EndpointImpl *epi = EndpointImpl::IRQget(epNum);
-                    //NOTE: Increment buffer before the callback
-                    // TODO: check why the buffer is inc and its behavior
-                    epi->IRQincBufferCount();
                     callbacks->IRQendpoint(epNum,Endpoint::OUT);
                     epi->IRQwakeWaitingThreadOnOutEndpoint();
                 }
@@ -150,9 +147,6 @@ void USBirqHandler()
         }
         else {
             EndpointImpl *epi = EndpointImpl::IRQget(epNum);
-            //NOTE: Decrement buffer before the callback
-            // TODO: check why the buffer is dec and its behavior
-            epi->IRQdecBufferCount();
             callbacks->IRQendpoint(epNum,Endpoint::IN);
             epi->IRQwakeWaitingThreadOnInEndpoint();
         }
