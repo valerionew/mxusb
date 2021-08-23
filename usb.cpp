@@ -267,6 +267,7 @@ bool USBdevice::enable(const unsigned char *device,
     
     //Configure gpio for USB pullup
     USBgpio::init();
+    iprintf("Init finished\n");
     
     //Enable clock to USB peripheral
     if (!USBperipheral::enable()) {

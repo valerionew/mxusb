@@ -376,7 +376,7 @@ void USBperipheral::power_on()
     RCC->AHB2ENR |= RCC_AHB2ENR_OTGFSEN;
     
     // FIXME: is this enable really necessary?
-    RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
+    // RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
 
     // Reset the power and clock gating control register (I do this to avoid spurious behaviour)
     // ST did not create a struct for this register and so it has to be accessed in a raw way
@@ -391,6 +391,8 @@ void USBperipheral::core_initialization()
     // Only TxFIFO empty level is programmed, as the Periodic TxFIFO empty level is only accessed in host mode
     USB_OTG_FS->GAHBCFG |= USB_OTG_GAHBCFG_TXFELVL;
 
+    printf("GAHBCFG: 0x%x\n", USB_OTG_FS->GAHBCFG);
+
     // FIELDS IN OTG_FS_GUSBCFG
     // Peripheral only mode forced and then wait for the change to take effect (it takes at least 25 ms).
     // I think it is better to proceed only in a known state. An other solution could have been to avoid checking if the device mode is active, as we already forced it.
@@ -404,9 +406,13 @@ void USBperipheral::core_initialization()
     USB_OTG_FS->GUSBCFG |= 5; // TOCAL value = 5
     USB_OTG_FS->GUSBCFG |= 15<<10; // TRDT value = 15
 
+    printf("GUSBCFG: 0x%x\n", USB_OTG_FS->GUSBCFG);
+
     // FIELDS IN OTG_FS_GINTMSK
     // OTG interrupt mask and mode mismatch interrupt mask
     USB_OTG_FS->GINTMSK |= USB_OTG_GINTMSK_OTGINT | USB_OTG_GINTMSK_MMISM;
+
+    printf("GINTMSK: 0x%x\n", USB_OTG_FS->GINTMSK);
 }
 
 void USBperipheral::device_initialization()
@@ -414,6 +420,8 @@ void USBperipheral::device_initialization()
     // FIELDS IN OTG_FS_DCFG
     // Device speed set at full speed and non-zero-length status  OUT handshake
     USB_OTG_DEVICE->DCFG |= USB_OTG_DCFG_DSPD | USB_OTG_DCFG_NZLSOHSK;
+
+    printf("DCFG: 0x%x\n", USB_OTG_DEVICE->DCFG);
     
     // Clear pending interrupts
     USB_OTG_FS->GINTSTS = 0xFFFFFFFF;
@@ -430,6 +438,8 @@ void USBperipheral::device_initialization()
     // Switch on full-speed transceiver module of PHY.
     // ST switch on power using the bit "power down", very weird and tricky...
     USB_OTG_FS->GCCFG |= USB_OTG_GCCFG_PWRDWN;
+
+    printf("GCCFG: 0x%x\n", USB_OTG_FS->GCCFG);
 }
 
 void USBperipheral::reset()
