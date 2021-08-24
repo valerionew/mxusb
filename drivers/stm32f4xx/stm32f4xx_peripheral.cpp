@@ -33,21 +33,6 @@ void OTG_FS_IRQHandler()
     #endif //_MIOSIX
 }
 
-extern void OTG_FS_WKUP_IRQHandler() __attribute__((naked));
-void OTG_FS_WKUP_IRQHandler()
-{
-    #ifdef _MIOSIX
-    //Since a context switch can happen within this interrupt handler, it is
-    //necessary to save and restore context
-    saveContext();
-    asm volatile("bl _ZN5mxusb17USBWKUPirqHandlerEv");
-    restoreContext();
-    #else //_MIOSIX
-    asm volatile("ldr r0, =_ZN5mxusb17USBWKUPirqHandlerEv\n\t"
-                 "bx  r0                                 \n\t");
-    #endif //_MIOSIX
-}
-
 
 namespace mxusb {
 
@@ -319,8 +304,6 @@ void USBperipheral::configureInterrupts()
     //Configure interrupts
     NVIC_EnableIRQ(OTG_FS_IRQn);
     NVIC_SetPriority(OTG_FS_IRQn,3);//Higher priority (Max=0, min=15)
-    NVIC_EnableIRQ(OTG_FS_WKUP_IRQn);
-    NVIC_SetPriority(OTG_FS_WKUP_IRQn,4);//Higher priority (Max=0, min=15)
 }
 
 bool USBperipheral::enable()

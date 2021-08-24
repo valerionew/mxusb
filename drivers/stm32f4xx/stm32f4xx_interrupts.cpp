@@ -166,6 +166,17 @@ void USBirqHandler()
             EndpointImpl::IRQdeconfigureAll();
         callbacks->IRQsuspend();
     }
+    else if (status & USB_OTG_GINTSTS_WKUINT)
+    {
+        USB_OTG_FS->GINTSTS = USB_OTG_GINTSTS_WKUINT; //Clear interrupt flag
+        Tracer::IRQtrace(Ut::RESUME_REQUEST);
+        DeviceStateImpl::IRQsetSuspended(false);
+        callbacks->IRQresume();
+        //Reconfigure all previously deconfigured endpoints
+        unsigned char conf=USBdevice::IRQgetConfiguration();
+        if(conf!=0)
+            EndpointImpl::IRQconfigureAll(DefCtrlPipe::IRQgetConfigDesc(conf));
+    }
 
     // unsigned short flags=USB->ISTR;
     // Callbacks *callbacks=Callbacks::IRQgetCallbacks();
@@ -249,25 +260,6 @@ void USBirqHandler()
     //     //a transaction, they are all serviced
     //     flags=USB->ISTR;
     // }
-}
-
-void USBWKUPirqHandler() __attribute__ ((noinline));
-void USBWKUPirqHandler()
-{
-    unsigned long status = USB_OTG_FS->GINTSTS;
-    Callbacks *callbacks = Callbacks::IRQgetCallbacks();
-
-    if (status & USB_OTG_GINTSTS_WKUINT)
-    {
-        USB_OTG_FS->GINTSTS = USB_OTG_GINTSTS_WKUINT; //Clear interrupt flag
-        Tracer::IRQtrace(Ut::RESUME_REQUEST);
-        DeviceStateImpl::IRQsetSuspended(false);
-        callbacks->IRQresume();
-        //Reconfigure all previously deconfigured endpoints
-        unsigned char conf=USBdevice::IRQgetConfiguration();
-        if(conf!=0)
-            EndpointImpl::IRQconfigureAll(DefCtrlPipe::IRQgetConfigDesc(conf));
-    }
 }
 
 } //namespace mxusb
