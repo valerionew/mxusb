@@ -54,7 +54,7 @@ void EndpointImpl::IRQdeconfigure(int epNum)
     // deconfigure TX side
     epi->DIEPCTL &= ~(USB_OTG_DIEPCTL_USBAEP);
     if ((epNum != 0) && (epi->DIEPCTL & USB_OTG_DIEPCTL_EPENA)) {
-        epi->DIEPCTL = USB_OTG_DIEPCTL_EPDIS;
+        epi->DIEPCTL = USB_OTG_DIEPCTL_EPDIS | USB_OTG_DIEPCTL_SNAK;
     }
     // clear interrupts
     epi->DIEPINT = 0xFF;
@@ -62,7 +62,7 @@ void EndpointImpl::IRQdeconfigure(int epNum)
     // deconfigure RX side
     epo->DOEPCTL &= ~(USB_OTG_DOEPCTL_USBAEP);
     if ((epNum != 0) && (epo->DOEPCTL & USB_OTG_DOEPCTL_EPENA)) {
-        epo->DOEPCTL = USB_OTG_DOEPCTL_EPDIS;
+        epo->DOEPCTL = USB_OTG_DOEPCTL_EPDIS | USB_OTG_DIEPCTL_SNAK;
     }
     // clear interrupts
     epo->DOEPINT = 0xFF;
@@ -92,6 +92,7 @@ bool EndpointImpl::write(const unsigned char *data, int size, int& written)
     
     EP_IN(ep)->DIEPTSIZ = 0;
     EP_IN(ep)->DIEPTSIZ = written | (1 << 19);
+    EP_IN(ep)->DIEPCTL &= ~USB_OTG_DIEPCTL_STALL;
     EP_IN(ep)->DIEPCTL |= USB_OTG_DIEPCTL_EPENA | USB_OTG_DIEPCTL_CNAK;
     SharedMemory::instance().copyBytesTo_NEW(ep,data,written);
 

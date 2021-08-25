@@ -357,13 +357,17 @@ void USBperipheral::power_on()
 {
     // Enable clock to OTG FS peripheral
     RCC->AHB2ENR |= RCC_AHB2ENR_OTGFSEN;
+
+    //Wait for the AHB bus to be ready, it takes some milliseconds
+    while((USB_OTG_FS->GRSTCTL & USB_OTG_GRSTCTL_AHBIDL) == 0);
     
     // FIXME: is this enable really necessary?
     RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
 
     // Reset the power and clock gating control register (I do this to avoid spurious behaviour)
     // ST did not create a struct for this register and so it has to be accessed in a raw way
-    *((uint32_t*)(USB_OTG_FS_PERIPH_BASE + USB_OTG_PCGCCTL_BASE)) = 0;
+    //*((uint32_t*)(USB_OTG_FS_PERIPH_BASE + USB_OTG_PCGCCTL_BASE)) = 0;
+    *PCGCCTL = 0;
 }
 
 void USBperipheral::core_initialization()
@@ -389,7 +393,7 @@ void USBperipheral::core_initialization()
 
     // FIELDS IN OTG_FS_GINTMSK
     // OTG interrupt mask and mode mismatch interrupt mask
-    USB_OTG_FS->GINTMSK |= USB_OTG_GINTMSK_OTGINT | USB_OTG_GINTMSK_MMISM;
+    //USB_OTG_FS->GINTMSK |= USB_OTG_GINTMSK_OTGINT | USB_OTG_GINTMSK_MMISM;
 }
 
 void USBperipheral::device_initialization()
@@ -397,14 +401,13 @@ void USBperipheral::device_initialization()
     // FIELDS IN OTG_FS_DCFG
     // Device speed set at full speed and non-zero-length status  OUT handshake
     USB_OTG_DEVICE->DCFG |= USB_OTG_DCFG_DSPD | USB_OTG_DCFG_NZLSOHSK;
-    
-    // Clear pending interrupts
-    USB_OTG_FS->GINTSTS = 0xFFFFFFFF;
 
     // FIELDS IN OTG_FS_GINTMSK
     // Unmask interrupts
-    USB_OTG_FS->GINTMSK |= USB_OTG_GINTMSK_USBRST | USB_OTG_GINTMSK_ENUMDNEM | USB_OTG_GINTMSK_ESUSPM
-                            | USB_OTG_GINTMSK_USBSUSPM | USB_OTG_GINTMSK_SOFM | USB_OTG_GINTMSK_RXFLVLM;
+    USB_OTG_FS->GINTMSK |= USB_OTG_GINTMSK_USBRST | USB_OTG_GINTMSK_ENUMDNEM | USB_OTG_GINTMSK_IEPINT
+                            | USB_OTG_GINTMSK_USBSUSPM | USB_OTG_GINTMSK_WUIM | USB_OTG_GINTMSK_RXFLVLM;
+    //USB_OTG_FS->GINTMSK |= USB_OTG_GINTMSK_USBRST | USB_OTG_GINTMSK_ENUMDNEM | USB_OTG_GINTMSK_ESUSPM
+    //                        | USB_OTG_GINTMSK_USBSUSPM | USB_OTG_GINTMSK_SOFM | USB_OTG_GINTMSK_RXFLVLM;
 
     // Enable the VBUS sensing device
     // USB_OTG_FS->GCCFG |= USB_OTG_GCCFG_VBUSBSEN;
@@ -417,6 +420,9 @@ void USBperipheral::device_initialization()
 
 void USBperipheral::reset()
 {
+    // Clear pending interrupts
+    USB_OTG_FS->GINTSTS = 0xFFFFFFFF;
+    
     // USB->CNTR=USB_CNTR_FRES; //Clear PDWN, leave FRES asserted
     // delayUs(1);  //Wait till USB analog circuitry stabilizes
     // USB->CNTR=0; //Clear FRES too, USB peripheral active
@@ -481,7 +487,7 @@ void USBperipheral::ep0reset()
     if (EP0_SIZE == 32) size = 0x01;
     if (EP0_SIZE == 64) size = 0x00;
 
-    EP_IN(0)->DIEPCTL = size | USB_OTG_DIEPCTL_EPENA;
+    EP_IN(0)->DIEPCTL = size | USB_OTG_DIEPCTL_SNAK;
     EP_OUT(0)->DOEPCTL = size | USB_OTG_DOEPCTL_EPENA | USB_OTG_DOEPCTL_CNAK; // FIXME: CNAK should be left?
 }
 
