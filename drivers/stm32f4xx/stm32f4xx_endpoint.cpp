@@ -90,10 +90,12 @@ bool EndpointImpl::write(const unsigned char *data, int size, int& written)
     if ((len) > EP_IN(ep)->DTXFSTS) return false;
     if (EP_IN(ep)->DIEPCTL & USB_OTG_DIEPCTL_EPENA) return false;
     
+    // configure ep transaction in control registers
     EP_IN(ep)->DIEPTSIZ = 0;
     EP_IN(ep)->DIEPTSIZ = written | (1 << 19);
     EP_IN(ep)->DIEPCTL &= ~USB_OTG_DIEPCTL_STALL;
     EP_IN(ep)->DIEPCTL |= USB_OTG_DIEPCTL_EPENA | USB_OTG_DIEPCTL_CNAK;
+    // push packet to TX FIFO
     SharedMemory::instance().copyBytesTo_NEW(ep,data,written);
 
     Tracer::IRQtrace(Ut::IN_BUF_FILL,ep,written);
@@ -113,6 +115,7 @@ bool EndpointImpl::read(unsigned char *data, int& readBytes)
         if(!(EP_OUT(ep)-> DOEPCTL & USB_OTG_DOEPCTL_NAKSTS)) return true; //No errors, just no data
     }
 
+    // pop packet from RX FIFO
     readBytes = ((USB_OTG_FS->GRXSTSR & USB_OTG_GRXSTSP_BCNT) >> 4);
     SharedMemory::instance().copyBytesFrom_NEW(data,ep,readBytes);
     
@@ -141,6 +144,7 @@ void EndpointImpl::IRQconfigureInterruptEndpoint(const unsigned char *desc)
             return; //Out of memory, or wMaxPacketSize==0
         }
 
+        // enable IN endpoint interrupt
         USB_OTG_DEVICE->DAINTMSK |= (0x0001 << addr);
 
         EP_IN(addr)->DIEPCTL = (RegisterType::INTERRUPT << 18) | wMaxPacketSize |
@@ -183,6 +187,7 @@ void EndpointImpl::IRQconfigureBulkEndpoint(const unsigned char *desc)
             return; //Out of memory, or wMaxPacketSize==0
         }
 
+        // enable IN endpoint interrupt
         USB_OTG_DEVICE->DAINTMSK |= (0x0001 << addr);
 
         EP_IN(addr)->DIEPCTL = (RegisterType::BULK << 18) | wMaxPacketSize |

@@ -28,7 +28,6 @@ enum RegisterType
     INTERRUPT=3
 };
 
-// TODO: remove RegisterStatus enum because it is not used in F4 driver
 enum RegisterStatus
 {
     DISABLED=0,

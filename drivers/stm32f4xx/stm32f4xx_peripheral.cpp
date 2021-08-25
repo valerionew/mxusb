@@ -438,10 +438,11 @@ void USBperipheral::disable()
     // USB->CNTR=USB_CNTR_PDWN | USB_CNTR_FRES;
     // USB->ISTR=0; //Clear interrupt flags
     // RCC->APB1ENR &= ~RCC_APB1ENR_USBEN;
-    USB_OTG_DEVICE->DCFG &= ~USB_OTG_DCFG_DAD;
-    USB_OTG_FS->GINTSTS = 0xFFFFFFFF;
-    USB_OTG_FS->GCCFG &= ~USB_OTG_GCCFG_PWRDWN;
-    RCC->AHB2ENR &= ~RCC_AHB2ENR_OTGFSEN;
+
+    USB_OTG_DEVICE->DCFG &= ~USB_OTG_DCFG_DAD; // reset device addr
+    USB_OTG_FS->GINTSTS = 0xFFFFFFFF; // clear interrupts
+    USB_OTG_FS->GCCFG &= ~USB_OTG_GCCFG_PWRDWN; // power down peripheral
+    RCC->AHB2ENR &= ~RCC_AHB2ENR_OTGFSEN; // disable clock to USB peripheral
 }
 
 void USBperipheral::ep0setTxStatus(RegisterStatus status)
@@ -488,19 +489,21 @@ void USBperipheral::ep0reset()
     if (EP0_SIZE == 64) size = 0x00;
 
     EP_IN(0)->DIEPCTL = size | USB_OTG_DIEPCTL_SNAK;
-    EP_OUT(0)->DOEPCTL = size | USB_OTG_DOEPCTL_EPENA | USB_OTG_DOEPCTL_CNAK; // FIXME: CNAK should be left?
+    EP_OUT(0)->DOEPCTL = size | USB_OTG_DOEPCTL_EPENA | USB_OTG_DOEPCTL_CNAK;
 }
 
 void USBperipheral::ep0beginStatusTransaction()
 {
-    // TODO: empty method
-    // USB->endpoint[0].IRQsetEpKind();
+    // NOTE: empty method
+    // implemented in F1 driver
+    // does not have an equivalent in F4 driver
 }
 
 void USBperipheral::ep0endStatusTransaction()
 {
-    // TODO: empty method
-    // USB->endpoint[0].IRQclearEpKind();
+    // NOTE: empty method
+    // implemented in F1 driver
+    // does not have an equivalent in F4 driver
 }
 
 void USBperipheral::ep0setTxDataSize(unsigned short size)
@@ -513,20 +516,21 @@ void USBperipheral::ep0setTxDataSize(unsigned short size)
 
 void USBperipheral::ep0setType(RegisterType type)
 {
-    // TODO: empty method
-    // USB->endpoint[0].IRQsetType(type);
+    // NOTE: empty method
+    // in F4 peripheral the type of EP0 is hardcoded to CONTROL
+    // because this endpoint has a slightly different register wrt to other EPs
 }
 
 void USBperipheral::ep0setTxBuffer()
 {
-    // TODO: empty method
-    // USB->endpoint[0].IRQsetTxBuffer(SharedMemory::instance().getEP0TxAddr(), EP0_SIZE);
+    // NOTE: empty method
+    // the EP0 tx buffer is allocated and managed in F4 SharedMemoryImpl class
 }
 
 void USBperipheral::ep0setRxBuffer()
 {
-    // TODO: empty method
-    // USB->endpoint[0].IRQsetRxBuffer(SharedMemory::instance().getEP0RxAddr(), EP0_SIZE);
+    // NOTE: empty method
+    // the shared rx buffer is allocated and managed in F4 SharedMemoryImpl class
 }
 
 } //namespace mxusb
