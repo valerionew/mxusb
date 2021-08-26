@@ -33,6 +33,10 @@
 #include <config/usb_config.h>
 
 #ifdef MXUSB_ENABLE_TRACE
+// TODO: for debugging, remove
+#include <functional>
+#include "e20/e20.h"
+
 #include "miosix.h"
 #endif //MXUSB_ENABLE_TRACE
 
@@ -156,6 +160,10 @@ public:
     static void IRQtraceArray(Ut::TracePoint, unsigned char *, int) {}
     static void IRQtraceEPnR(unsigned short reg) {}
     #endif //MXUSB_ENABLE_TRACE
+
+    // TODO: for debugging, remove
+    static miosix::FixedEventQueue<100,12> logqueue;
+    static void runQueue(void *argv);
 private:
     Tracer();
 

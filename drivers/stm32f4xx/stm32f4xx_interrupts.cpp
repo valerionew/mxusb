@@ -55,6 +55,8 @@ static void IRQhandleReset()
 
     //Set STUPCNT=3 to receive up to 3 back-to-back SETUP packets
     EP_OUT(0)->DOEPTSIZ = EP0_SIZE*3 | USB_OTG_DOEPTSIZ_PKTCNT | USB_OTG_DOEPTSIZ_STUPCNT;
+
+    Tracer::logqueue.IRQpost([=]() { printf(">>[int] end reset\n"); });
 }
 
 /**
@@ -63,12 +65,16 @@ static void IRQhandleReset()
  */
 static void IRQhandleEnumDone()
 {
+    Tracer::logqueue.IRQpost([=]() { printf(">>[int] enum done\n"); });
+
     USB_OTG_FS->GINTSTS = USB_OTG_GINTSTS_ENUMDNE; //Clear interrupt flag
 
     DefCtrlPipe::IRQdefaultStatus();
 
     //Device is now in the default address state
     DeviceStateImpl::IRQsetState(USBdevice::DEFAULT);
+
+    Tracer::logqueue.IRQpost([=]() { printf(">>[int] end enum done\n"); });
 }
 
 /**
@@ -104,6 +110,7 @@ void USBirqHandler()
         switch ((pop & USB_OTG_GRXSTSP_PKTSTS) >> 17) {
             case 0x02: // OUT data packet received
             {
+                Tracer::logqueue.IRQpost([=]() { printf(">>[int] rxflvl: out data packet, ep:%d\n",epNum); });
                 if (epNum == 0) {
                     // handle OUT data packet on ep0
                     DefCtrlPipe::IRQstatusNak();
@@ -122,9 +129,11 @@ void USBirqHandler()
             }
             case 0x03: // OUT transfer completed
             case 0x04: // SETUP transaction completed
+                Tracer::logqueue.IRQpost([=]() { printf(">>[int] rxflvl: out/setup completed, ep:%d\n",epNum); });
                 EP_OUT(epNum)->DOEPCTL |= USB_OTG_DOEPCTL_CNAK | USB_OTG_DOEPCTL_EPENA;
                 break;
             case 0x06: // SETUP data packet received
+                Tracer::logqueue.IRQpost([=]() { printf(">>[int] rxflvl: setup packet, ep:%d\n",epNum); });
                 DefCtrlPipe::IRQstatusNak();
                 DefCtrlPipe::IRQsetup();
                 DefCtrlPipe::IRQrestoreStatus();
@@ -152,6 +161,8 @@ void USBirqHandler()
                 if (EP_IN(epNum)->DIEPINT & USB_OTG_DIEPINT_XFRC) {
                     EP_IN(epNum)->DIEPINT = USB_OTG_DIEPINT_XFRC; // Clear interrupt flag
 
+                    Tracer::logqueue.IRQpost([=]() { printf(">>[int] iepint: in data packet, ep:%d\n",epNum); });
+
                     if (epNum == 0) {
                         // handle IN data packet on ep0
                         DefCtrlPipe::IRQstatusNak();
@@ -172,8 +183,6 @@ void USBirqHandler()
     }
     else if (status & USB_OTG_GINTSTS_USBSUSP)
     {
-        // FIXME: uncomment and enable SUSP interrupt after testing
-        /*
         USB_OTG_FS->GINTSTS = USB_OTG_GINTSTS_USBSUSP; //Clear interrupt flag
         Tracer::IRQtrace(Ut::SUSPEND_REQUEST);
         DeviceStateImpl::IRQsetSuspended(true);
@@ -185,12 +194,9 @@ void USBirqHandler()
 
         // power down peripheral during suspended state
         *PCGCCTL |= (USB_OTG_PCGCCTL_STOPCLK | USB_OTG_PCGCCTL_GATECLK);
-        */
     }
     else if (status & USB_OTG_GINTSTS_WKUINT)
     {
-        // FIXME: uncomment and enable WKUP interrupt after testing
-        /*
         // resume peripheral after suspended state
         *PCGCCTL = 0;
 
@@ -202,7 +208,6 @@ void USBirqHandler()
         unsigned char conf=USBdevice::IRQgetConfiguration();
         if(conf!=0)
             EndpointImpl::IRQconfigureAll(DefCtrlPipe::IRQgetConfigDesc(conf));
-        */
     }
 }
 
