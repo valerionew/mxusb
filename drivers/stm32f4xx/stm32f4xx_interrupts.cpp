@@ -34,15 +34,15 @@ static void IRQhandleReset()
     USB_OTG_FS->GINTSTS = 0xFFFFFFFF; //When the device is reset, clear all pending interrupts
 
     //for(int i=1;i<NUM_ENDPOINTS;i++) EndpointImpl::get(i)->IRQdeconfigure(i);
-    //Set NAK bit for all out endpoints
-    // TODO: endpoints should be deconfiguted instead of simply nacked? check manual
+    // deconfigure all endpoints
     for (int i = 0; i < NUM_ENDPOINTS; i++) {
-        EP_OUT(i)->DOEPCTL |= USB_OTG_DOEPCTL_SNAK;
+        EndpointImpl::get(i)->IRQdeconfigure(i);
     }
 
     SharedMemory::instance().reset();
 
-    // //After a reset device address is zero, enable transaction handling
+    //After a reset device address is zero, enable transaction handling
+    USB_OTG_DEVICE->DCFG &= ~(USB_OTG_DCFG_DAD);
     // USB->DADDR=0 | USB_DADDR_EF;
 
     // //Enable more interrupt sources now that reset happened
@@ -51,10 +51,10 @@ static void IRQhandleReset()
     // Unmask RX and TX interrupts on EP0
     USB_OTG_DEVICE->DAINTMSK |= 0x00010001;
     USB_OTG_DEVICE->DOEPMSK |= (USB_OTG_DOEPMSK_XFRCM | USB_OTG_DOEPMSK_STUPM);
-    USB_OTG_DEVICE->DIEPMSK |= (USB_OTG_DIEPMSK_XFRCM | USB_OTG_DIEPMSK_TOM); // STM typed TOC instead of TOM in the documentation: be careful
+    USB_OTG_DEVICE->DIEPMSK |= (USB_OTG_DIEPMSK_XFRCM);
 
     //Set STUPCNT=3 to receive up to 3 back-to-back SETUP packets
-    EP_OUT(0)->DOEPTSIZ = EP0_SIZE | USB_OTG_DOEPTSIZ_PKTCNT | USB_OTG_DOEPTSIZ_STUPCNT;
+    EP_OUT(0)->DOEPTSIZ = EP0_SIZE*3 | USB_OTG_DOEPTSIZ_PKTCNT | USB_OTG_DOEPTSIZ_STUPCNT;
 }
 
 /**
@@ -96,28 +96,31 @@ void USBirqHandler()
     }
     else if (status & USB_OTG_GINTSTS_RXFLVL)
     {
-        // TODO: check
+        // disable rx status queue level interrupt
+        USB_OTG_FS->GINTMSK &= ~USB_OTG_GINTMSK_RXFLVLM;
+
         unsigned long pop = USB_OTG_FS->GRXSTSR;
         unsigned char epNum = pop & USB_OTG_GRXSTSP_EPNUM;
         switch ((pop & USB_OTG_GRXSTSP_PKTSTS) >> 17) {
             case 0x02: // OUT data packet received
             {
-                EP_OUT(epNum)->DOEPINT = USB_OTG_DOEPINT_XFRC; // Clear interrupt flag
-
                 if (epNum == 0) {
+                    // handle OUT data packet on ep0
                     DefCtrlPipe::IRQstatusNak();
                     DefCtrlPipe::IRQout();
                     DefCtrlPipe::IRQrestoreStatus();
                 }
                 else {
+                    // handle OUT data packet on other eps
                     EndpointImpl *epi = EndpointImpl::IRQget(epNum);
                     callbacks->IRQendpoint(epNum,Endpoint::OUT);
                     epi->IRQwakeWaitingThreadOnOutEndpoint();
                 }
+
+                EP_OUT(epNum)->DOEPINT = USB_OTG_DOEPINT_XFRC; // Clear interrupt flag
                 break;
             }
             case 0x03: // OUT transfer completed
-                break;
             case 0x04: // SETUP transaction completed
                 EP_OUT(epNum)->DOEPCTL |= USB_OTG_DOEPCTL_CNAK | USB_OTG_DOEPCTL_EPENA;
                 break;
@@ -125,38 +128,52 @@ void USBirqHandler()
                 DefCtrlPipe::IRQstatusNak();
                 DefCtrlPipe::IRQsetup();
                 DefCtrlPipe::IRQrestoreStatus();
+
+                EP_OUT(epNum)->DOEPINT = USB_OTG_DOEPINT_STUP; // Clear interrupt flag
+                break;
+            default:
+                // pop GRXSTSP
+                USB_OTG_FS->GRXSTSP;
                 break;
         }
+
+        // enable rx status queue level interrupt
+        USB_OTG_FS->GINTMSK |= USB_OTG_GINTMSK_RXFLVLM;
     }
     else if (status & USB_OTG_GINTSTS_IEPINT)
     {
-        // TODO: check
-        unsigned char epNum;
-        for (epNum = 0; epNum <= NUM_ENDPOINTS; epNum++) {
-            if (USB_OTG_DEVICE->DAINT & (1 << epNum)) {
-                break;
-            }
-        }
-        
-        EP_IN(epNum)->DIEPINT = USB_OTG_DIEPINT_XFRC; // Clear interrupt flag
+        uint32_t daint = USB_OTG_DEVICE->DAINT & 0xFFFF;
+        int epNum = 0;
+        // iterate over all endpoints because a single interrupt
+        // can be generated for many endpoints
+        while (daint)
+        {
+            if (daint & 0x1) {
+                if (EP_IN(epNum)->DIEPINT & USB_OTG_DIEPINT_XFRC) {
+                    EP_IN(epNum)->DIEPINT = USB_OTG_DIEPINT_XFRC; // Clear interrupt flag
 
-        if (epNum == 0) {
-            DefCtrlPipe::IRQstatusNak();
-            DefCtrlPipe::IRQin();
-            DefCtrlPipe::IRQrestoreStatus();
-        }
-        else {
-            EndpointImpl *epi = EndpointImpl::IRQget(epNum);
-            callbacks->IRQendpoint(epNum,Endpoint::IN);
-            epi->IRQwakeWaitingThreadOnInEndpoint();
+                    if (epNum == 0) {
+                        // handle IN data packet on ep0
+                        DefCtrlPipe::IRQstatusNak();
+                        DefCtrlPipe::IRQin();
+                        DefCtrlPipe::IRQrestoreStatus();
+                    }
+                    else {
+                        // handle IN data packet on other eps
+                        EndpointImpl *epi = EndpointImpl::IRQget(epNum);
+                        callbacks->IRQendpoint(epNum,Endpoint::IN);
+                        epi->IRQwakeWaitingThreadOnInEndpoint();
+                    }
+                }
+            }
+            epNum++;
+            daint >>= 1;
         }
     }
-    /*else if (status & USB_OTG_GINTSTS_OEPINT)
-    {
-
-    }*/
     else if (status & USB_OTG_GINTSTS_USBSUSP)
     {
+        // FIXME: uncomment and enable SUSP interrupt after testing
+        /*
         USB_OTG_FS->GINTSTS = USB_OTG_GINTSTS_USBSUSP; //Clear interrupt flag
         Tracer::IRQtrace(Ut::SUSPEND_REQUEST);
         DeviceStateImpl::IRQsetSuspended(true);
@@ -165,100 +182,18 @@ void USBirqHandler()
         if(USBdevice::IRQgetState()==USBdevice::CONFIGURED)
             EndpointImpl::IRQdeconfigureAll();
         callbacks->IRQsuspend();
+
+        // power down peripheral during suspended state
+        *PCGCCTL |= (USB_OTG_PCGCCTL_STOPCLK | USB_OTG_PCGCCTL_GATECLK);
+        */
     }
-
-    // unsigned short flags=USB->ISTR;
-    // Callbacks *callbacks=Callbacks::IRQgetCallbacks();
-    // if(flags & USB_ISTR_RESET)
-    // {
-    //     IRQhandleReset();
-    //     callbacks->IRQreset();
-    //     return; //Reset causes all interrupt flags to be ignored
-    // }
-    // if(flags & USB_ISTR_SUSP)
-    // {
-    //     USB->ISTR= ~USB_ISTR_SUSP; //Clear interrupt flag
-    //     USB->CNTR|=USB_CNTR_FSUSP;
-    //     USB->CNTR|=USB_CNTR_LP_MODE;
-    //     Tracer::IRQtrace(Ut::SUSPEND_REQUEST);
-    //     DeviceStateImpl::IRQsetSuspended(true);
-    //     //If device is configured, deconfigure all endpoints. This in turn will
-    //     //wake the threads waiting to write/read on endpoints
-    //     if(USBdevice::IRQgetState()==USBdevice::CONFIGURED)
-    //         EndpointImpl::IRQdeconfigureAll();
-    //     callbacks->IRQsuspend();
-    // }
-    // if(flags & USB_ISTR_WKUP)
-    // {
-    //     USB->ISTR= ~USB_ISTR_WKUP; //Clear interrupt flag
-    //     USB->CNTR&= ~USB_CNTR_FSUSP;
-    //     Tracer::IRQtrace(Ut::RESUME_REQUEST);
-    //     DeviceStateImpl::IRQsetSuspended(false);
-    //     callbacks->IRQresume();
-    //     //Reconfigure all previously deconfigured endpoints
-    //     unsigned char conf=USBdevice::IRQgetConfiguration();
-    //     if(conf!=0)
-    //         EndpointImpl::IRQconfigureAll(DefCtrlPipe::IRQgetConfigDesc(conf));
-    // }
-    // while(flags & USB_ISTR_CTR)
-    // {
-    //     int epNum=flags & USB_ISTR_EP_ID;
-    //     unsigned short reg=USB->endpoint[epNum].get();
-    //     if(epNum==0)
-    //     {
-    //         DefCtrlPipe::IRQstatusNak();
-    //         //Transaction on endpoint zero
-    //         if(reg & USB_EP0R_CTR_RX)
-    //         {
-    //             bool isSetupPacket=reg & USB_EP0R_SETUP;
-    //             USB->endpoint[epNum].IRQclearRxInterruptFlag();
-    //             if(isSetupPacket) DefCtrlPipe::IRQsetup();
-    //             else DefCtrlPipe::IRQout();
-    //         }
-
-    //         if(reg & USB_EP0R_CTR_TX)
-    //         {
-    //             USB->endpoint[epNum].IRQclearTxInterruptFlag();
-    //             DefCtrlPipe::IRQin();
-    //         }
-    //         DefCtrlPipe::IRQrestoreStatus();
-
-    //     } else {
-    //         //Transaction on other endpoints
-    //         EndpointImpl *epi=EndpointImpl::IRQget(epNum);
-    //         if(reg & USB_EP0R_CTR_RX)
-    //         {
-    //             USB->endpoint[epNum].IRQclearRxInterruptFlag();
-    //             //NOTE: Increment buffer before the callabck
-    //             epi->IRQincBufferCount();
-    //             callbacks->IRQendpoint(epNum,Endpoint::OUT);
-    //             epi->IRQwakeWaitingThreadOnOutEndpoint();
-    //         }
-
-    //         if(reg & USB_EP0R_CTR_TX)
-    //         {
-    //             USB->endpoint[epNum].IRQclearTxInterruptFlag();
-
-    //             //NOTE: Decrement buffer before the callabck
-    //             epi->IRQdecBufferCount();
-    //             callbacks->IRQendpoint(epNum,Endpoint::IN);
-    //             epi->IRQwakeWaitingThreadOnInEndpoint();
-    //         }
-    //     }
-    //     //Read again the ISTR register so that if more endpoints have completed
-    //     //a transaction, they are all serviced
-    //     flags=USB->ISTR;
-    // }
-}
-
-void USBWKUPirqHandler() __attribute__ ((noinline));
-void USBWKUPirqHandler()
-{
-    unsigned long status = USB_OTG_FS->GINTSTS;
-    Callbacks *callbacks = Callbacks::IRQgetCallbacks();
-
-    if (status & USB_OTG_GINTSTS_WKUINT)
+    else if (status & USB_OTG_GINTSTS_WKUINT)
     {
+        // FIXME: uncomment and enable WKUP interrupt after testing
+        /*
+        // resume peripheral after suspended state
+        *PCGCCTL = 0;
+
         USB_OTG_FS->GINTSTS = USB_OTG_GINTSTS_WKUINT; //Clear interrupt flag
         Tracer::IRQtrace(Ut::RESUME_REQUEST);
         DeviceStateImpl::IRQsetSuspended(false);
@@ -267,6 +202,7 @@ void USBWKUPirqHandler()
         unsigned char conf=USBdevice::IRQgetConfiguration();
         if(conf!=0)
             EndpointImpl::IRQconfigureAll(DefCtrlPipe::IRQgetConfigDesc(conf));
+        */
     }
 }
 

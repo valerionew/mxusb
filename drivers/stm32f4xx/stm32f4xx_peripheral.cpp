@@ -33,21 +33,6 @@ void OTG_FS_IRQHandler()
     #endif //_MIOSIX
 }
 
-extern void OTG_FS_WKUP_IRQHandler() __attribute__((naked));
-void OTG_FS_WKUP_IRQHandler()
-{
-    #ifdef _MIOSIX
-    //Since a context switch can happen within this interrupt handler, it is
-    //necessary to save and restore context
-    saveContext();
-    asm volatile("bl _ZN5mxusb17USBWKUPirqHandlerEv");
-    restoreContext();
-    #else //_MIOSIX
-    asm volatile("ldr r0, =_ZN5mxusb17USBWKUPirqHandlerEv\n\t"
-                 "bx  r0                                 \n\t");
-    #endif //_MIOSIX
-}
-
 
 namespace mxusb {
 
@@ -319,8 +304,6 @@ void USBperipheral::configureInterrupts()
     //Configure interrupts
     NVIC_EnableIRQ(OTG_FS_IRQn);
     NVIC_SetPriority(OTG_FS_IRQn,3);//Higher priority (Max=0, min=15)
-    NVIC_EnableIRQ(OTG_FS_WKUP_IRQn);
-    NVIC_SetPriority(OTG_FS_WKUP_IRQn,4);//Higher priority (Max=0, min=15)
 }
 
 bool USBperipheral::enable()
@@ -374,13 +357,17 @@ void USBperipheral::power_on()
 {
     // Enable clock to OTG FS peripheral
     RCC->AHB2ENR |= RCC_AHB2ENR_OTGFSEN;
+
+    //Wait for the AHB bus to be ready, it takes some milliseconds
+    while((USB_OTG_FS->GRSTCTL & USB_OTG_GRSTCTL_AHBIDL) == 0);
     
     // FIXME: is this enable really necessary?
     // RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
 
     // Reset the power and clock gating control register (I do this to avoid spurious behaviour)
     // ST did not create a struct for this register and so it has to be accessed in a raw way
-    *((uint32_t*)(USB_OTG_FS_PERIPH_BASE + USB_OTG_PCGCCTL_BASE)) = 0;
+    //*((uint32_t*)(USB_OTG_FS_PERIPH_BASE + USB_OTG_PCGCCTL_BASE)) = 0;
+    *PCGCCTL = 0;
 }
 
 void USBperipheral::core_initialization()
@@ -428,8 +415,10 @@ void USBperipheral::device_initialization()
 
     // FIELDS IN OTG_FS_GINTMSK
     // Unmask interrupts
-    USB_OTG_FS->GINTMSK |= USB_OTG_GINTMSK_USBRST | USB_OTG_GINTMSK_ENUMDNEM | USB_OTG_GINTMSK_ESUSPM
-                            | USB_OTG_GINTMSK_USBSUSPM | USB_OTG_GINTMSK_SOFM | USB_OTG_GINTMSK_RXFLVLM;
+    USB_OTG_FS->GINTMSK |= USB_OTG_GINTMSK_USBRST | USB_OTG_GINTMSK_ENUMDNEM | USB_OTG_GINTMSK_IEPINT
+                            | USB_OTG_GINTMSK_USBSUSPM | USB_OTG_GINTMSK_WUIM | USB_OTG_GINTMSK_RXFLVLM;
+    //USB_OTG_FS->GINTMSK |= USB_OTG_GINTMSK_USBRST | USB_OTG_GINTMSK_ENUMDNEM | USB_OTG_GINTMSK_ESUSPM
+    //                        | USB_OTG_GINTMSK_USBSUSPM | USB_OTG_GINTMSK_SOFM | USB_OTG_GINTMSK_RXFLVLM;
 
     // Enable the VBUS sensing device
     // USB_OTG_FS->GCCFG |= USB_OTG_GCCFG_VBUSBSEN;
@@ -444,6 +433,9 @@ void USBperipheral::device_initialization()
 
 void USBperipheral::reset()
 {
+    // Clear pending interrupts
+    USB_OTG_FS->GINTSTS = 0xFFFFFFFF;
+    
     // USB->CNTR=USB_CNTR_FRES; //Clear PDWN, leave FRES asserted
     // delayUs(1);  //Wait till USB analog circuitry stabilizes
     // USB->CNTR=0; //Clear FRES too, USB peripheral active
@@ -459,10 +451,11 @@ void USBperipheral::disable()
     // USB->CNTR=USB_CNTR_PDWN | USB_CNTR_FRES;
     // USB->ISTR=0; //Clear interrupt flags
     // RCC->APB1ENR &= ~RCC_APB1ENR_USBEN;
-    USB_OTG_DEVICE->DCFG &= ~USB_OTG_DCFG_DAD;
-    USB_OTG_FS->GINTSTS = 0xFFFFFFFF;
-    USB_OTG_FS->GCCFG &= ~USB_OTG_GCCFG_PWRDWN;
-    RCC->AHB2ENR &= ~RCC_AHB2ENR_OTGFSEN;
+
+    USB_OTG_DEVICE->DCFG &= ~USB_OTG_DCFG_DAD; // reset device addr
+    USB_OTG_FS->GINTSTS = 0xFFFFFFFF; // clear interrupts
+    USB_OTG_FS->GCCFG &= ~USB_OTG_GCCFG_PWRDWN; // power down peripheral
+    RCC->AHB2ENR &= ~RCC_AHB2ENR_OTGFSEN; // disable clock to USB peripheral
 }
 
 void USBperipheral::ep0setTxStatus(RegisterStatus status)
@@ -508,20 +501,22 @@ void USBperipheral::ep0reset()
     if (EP0_SIZE == 32) size = 0x01;
     if (EP0_SIZE == 64) size = 0x00;
 
-    EP_IN(0)->DIEPCTL = size | USB_OTG_DIEPCTL_EPENA;
-    EP_OUT(0)->DOEPCTL = size | USB_OTG_DOEPCTL_EPENA | USB_OTG_DOEPCTL_CNAK; // FIXME: CNAK should be left?
+    EP_IN(0)->DIEPCTL = size | USB_OTG_DIEPCTL_SNAK;
+    EP_OUT(0)->DOEPCTL = size | USB_OTG_DOEPCTL_EPENA | USB_OTG_DOEPCTL_CNAK;
 }
 
 void USBperipheral::ep0beginStatusTransaction()
 {
-    // TODO: empty method
-    // USB->endpoint[0].IRQsetEpKind();
+    // NOTE: empty method
+    // implemented in F1 driver
+    // does not have an equivalent in F4 driver
 }
 
 void USBperipheral::ep0endStatusTransaction()
 {
-    // TODO: empty method
-    // USB->endpoint[0].IRQclearEpKind();
+    // NOTE: empty method
+    // implemented in F1 driver
+    // does not have an equivalent in F4 driver
 }
 
 void USBperipheral::ep0setTxDataSize(unsigned short size)
@@ -534,20 +529,21 @@ void USBperipheral::ep0setTxDataSize(unsigned short size)
 
 void USBperipheral::ep0setType(RegisterType type)
 {
-    // TODO: empty method
-    // USB->endpoint[0].IRQsetType(type);
+    // NOTE: empty method
+    // in F4 peripheral the type of EP0 is hardcoded to CONTROL
+    // because this endpoint has a slightly different register wrt to other EPs
 }
 
 void USBperipheral::ep0setTxBuffer()
 {
-    // TODO: empty method
-    // USB->endpoint[0].IRQsetTxBuffer(SharedMemory::instance().getEP0TxAddr(), EP0_SIZE);
+    // NOTE: empty method
+    // the EP0 tx buffer is allocated and managed in F4 SharedMemoryImpl class
 }
 
 void USBperipheral::ep0setRxBuffer()
 {
-    // TODO: empty method
-    // USB->endpoint[0].IRQsetRxBuffer(SharedMemory::instance().getEP0RxAddr(), EP0_SIZE);
+    // NOTE: empty method
+    // the shared rx buffer is allocated and managed in F4 SharedMemoryImpl class
 }
 
 } //namespace mxusb
