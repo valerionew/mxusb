@@ -56,7 +56,9 @@ void Tracer::init()
 // TODO: for debugging, remove
 void Tracer::runQueue(void *argv)
 {
-    logqueue.run();
+    while (1) {
+        logqueue.runOne();
+    } 
 }
 
 void Tracer::shutdown()
