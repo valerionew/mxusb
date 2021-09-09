@@ -304,19 +304,15 @@ public:
 
     static unsigned short ep0getReceivedBytes();
 
+    static void ep0read(unsigned char *data, int size);
+
     static void ep0reset();
 
     static void ep0beginStatusTransaction();
 
     static void ep0endStatusTransaction();
 
-    static void ep0setTxDataSize(unsigned short size);
-
-    static void ep0setType(RegisterType type);
-
-    static void ep0setTxBuffer();
-
-    static void ep0setRxBuffer();
+    static bool ep0write(int size, const unsigned char *data = nullptr);
 };
 
 } //namespace mxusb

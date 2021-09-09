@@ -468,7 +468,9 @@ void USBperipheral::ep0setTxStatus(RegisterStatus status)
         EP_IN(0)->DIEPCTL |= USB_OTG_DIEPCTL_SNAK;
     }
     else if (status == RegisterStatus::VALID) {
-        EP_IN(0)->DIEPCTL |= USB_OTG_DIEPCTL_CNAK;
+        if (EP_IN(0)->DIEPCTL & USB_OTG_DIEPCTL_NAKSTS) {
+            EP_IN(0)->DIEPCTL |= USB_OTG_DIEPCTL_CNAK;
+        }
     }
 }
 
@@ -482,7 +484,9 @@ void USBperipheral::ep0setRxStatus(RegisterStatus status)
         EP_OUT(0)->DOEPCTL |= USB_OTG_DOEPCTL_SNAK;
     }
     else if (status == RegisterStatus::VALID) {
-        EP_OUT(0)->DOEPCTL |= USB_OTG_DOEPCTL_CNAK;
+        if (EP_OUT(0)->DOEPCTL & USB_OTG_DOEPCTL_NAKSTS) {
+            EP_OUT(0)->DOEPCTL |= USB_OTG_DOEPCTL_CNAK;
+        }
     }
 }
 
@@ -490,6 +494,11 @@ unsigned short USBperipheral::ep0getReceivedBytes()
 {
     // return USB->endpoint[0].IRQgetReceivedBytes();
     return ((USB_OTG_FS->GRXSTSR & USB_OTG_GRXSTSP_BCNT) >> 4);
+}
+
+void USBperipheral::ep0read(unsigned char *data, int size)
+{
+    SharedMemory::instance().copyBytesFrom_NEW(data,0,size);
 }
 
 void USBperipheral::ep0reset()
@@ -503,6 +512,12 @@ void USBperipheral::ep0reset()
 
     EP_IN(0)->DIEPCTL = size | USB_OTG_DIEPCTL_SNAK;
     EP_OUT(0)->DOEPCTL = size | USB_OTG_DOEPCTL_EPENA | USB_OTG_DOEPCTL_CNAK;
+
+    // NOTES:
+    // in F4 peripheral the type of EP0 is hardcoded to CONTROL
+    // because this endpoint has a slightly different register wrt to other EPs
+
+    // the EP0 tx and shared rx buffers are allocated and managed in F4 SharedMemoryImpl class
 }
 
 void USBperipheral::ep0beginStatusTransaction()
@@ -519,31 +534,23 @@ void USBperipheral::ep0endStatusTransaction()
     // does not have an equivalent in F4 driver
 }
 
-void USBperipheral::ep0setTxDataSize(unsigned short size)
+bool USBperipheral::ep0write(int size, const unsigned char *data)
 {
-    // USB->endpoint[0].IRQsetTxDataSize(size);
+    //No enough space in TX fifo
+    uint32_t len = (size + 0x03) >> 2;
+    if ((len) > EP_IN(0)->DTXFSTS) return false;
+    
+    // configure ep transaction in control registers
     EP_IN(0)->DIEPTSIZ = 0;
     EP_IN(0)->DIEPTSIZ = size | (1 << 19);
     EP_IN(0)->DIEPCTL |= USB_OTG_DIEPCTL_EPENA | USB_OTG_DIEPCTL_CNAK;
-}
 
-void USBperipheral::ep0setType(RegisterType type)
-{
-    // NOTE: empty method
-    // in F4 peripheral the type of EP0 is hardcoded to CONTROL
-    // because this endpoint has a slightly different register wrt to other EPs
-}
-
-void USBperipheral::ep0setTxBuffer()
-{
-    // NOTE: empty method
-    // the EP0 tx buffer is allocated and managed in F4 SharedMemoryImpl class
-}
-
-void USBperipheral::ep0setRxBuffer()
-{
-    // NOTE: empty method
-    // the shared rx buffer is allocated and managed in F4 SharedMemoryImpl class
+    // push packet to TX FIFO if it is not a zero-length packet
+    if (size > 0) {
+        SharedMemory::instance().copyBytesTo_NEW(0,data,size);
+    }
+    
+    return true;
 }
 
 } //namespace mxusb

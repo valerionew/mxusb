@@ -372,9 +372,21 @@ unsigned short USBperipheral::ep0getReceivedBytes()
     return USB->endpoint[0].IRQgetReceivedBytes();
 }
 
+void USBperipheral::ep0read(unsigned char *data, int size)
+{
+    SharedMemory::instance().copyBytesFrom_NEW(data,0,size);
+}
+
 void USBperipheral::ep0reset()
 {
+    // reset register
     USB->endpoint[0] = 0;
+    // set register type
+    USB->endpoint[0].IRQsetType(RegisterType::CONTROL);
+    // set tx buffer
+    USB->endpoint[0].IRQsetTxBuffer(SharedMemoryImpl::EP0TX_ADDR, EP0_SIZE);
+    // set rx buffer
+    USB->endpoint[0].IRQsetRxBuffer(SharedMemoryImpl::EP0RX_ADDR, EP0_SIZE);
 }
 
 void USBperipheral::ep0beginStatusTransaction()
@@ -387,26 +399,16 @@ void USBperipheral::ep0endStatusTransaction()
     USB->endpoint[0].IRQclearEpKind();
 }
 
-void USBperipheral::ep0setTxDataSize(unsigned short size)
+bool USBperipheral::ep0write(int size, const unsigned char *data)
 {
+    // push packet to TX FIFO if it is not a zero-length packet
+    if (size > 0) {
+        SharedMemory::instance().copyBytesTo_NEW(0,data,size);
+    }
+
     USB->endpoint[0].IRQsetTxDataSize(size);
-}
 
-void USBperipheral::ep0setType(RegisterType type)
-{
-    USB->endpoint[0].IRQsetType(type);
-}
-
-void USBperipheral::ep0setTxBuffer()
-{
-    //USB->endpoint[0].IRQsetTxBuffer(SharedMemory::instance().getEP0TxAddr(), EP0_SIZE);
-    USB->endpoint[0].IRQsetTxBuffer(SharedMemoryImpl::EP0TX_ADDR, EP0_SIZE);
-}
-
-void USBperipheral::ep0setRxBuffer()
-{
-    //USB->endpoint[0].IRQsetRxBuffer(SharedMemory::instance().getEP0RxAddr(), EP0_SIZE);
-    USB->endpoint[0].IRQsetRxBuffer(SharedMemoryImpl::EP0RX_ADDR, EP0_SIZE);
+    return true;
 }
 
 } //namespace mxusb

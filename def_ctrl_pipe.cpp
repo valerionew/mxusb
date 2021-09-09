@@ -91,7 +91,8 @@ void DefCtrlPipe::IRQsetup()
     unsigned char *packet=reinterpret_cast<unsigned char*>(&setup);
     //SharedMemory::instance().copyBytesFrom(packet,SharedMemoryImpl::EP0RX_ADDR,sizeof(setup));
     //SharedMemory::instance().copyBytesFrom(packet,SharedMemory::instance().getEP0RxAddr(),sizeof(setup));
-    SharedMemory::instance().copyBytesFrom_NEW(packet,0,sizeof(setup));
+    //SharedMemory::instance().copyBytesFrom_NEW(packet,0,sizeof(setup));
+    USBperipheral::ep0read(packet,sizeof(setup));
     Tracer::IRQtraceArray(Ut::EP0_VALID_SETUP,packet,sizeof(setup));
 
     if(controlState.state!=CTR_NO_REQ_PENDING)
@@ -124,7 +125,8 @@ void DefCtrlPipe::IRQsetup()
                 //STATUS handshake is an IN with zero bytes
                 controlState.state=CTR_OUT_STATUS;
                 //USB->endpoint[0].IRQsetTxDataSize(0);
-                USBperipheral::ep0setTxDataSize(0);
+                //USBperipheral::ep0setTxDataSize(0);
+                USBperipheral::ep0write(0);
                 IRQsetEp0TxValid();
                 return; //Do not go through the standard requests switch
         }
@@ -271,13 +273,13 @@ void DefCtrlPipe::IRQdefaultStatus()
     //epr=0;
     USBperipheral::ep0reset();
     //epr.IRQsetType(EndpointRegister::CONTROL);
-    USBperipheral::ep0setType(RegisterType::CONTROL);
+    //USBperipheral::ep0setType(RegisterType::CONTROL);
     //epr.IRQsetTxBuffer(SharedMemoryImpl::EP0TX_ADDR,EP0_SIZE);
     //epr.IRQsetTxBuffer(SharedMemory::instance().getEP0TxAddr(),EP0_SIZE);
-    USBperipheral::ep0setTxBuffer();
+    //USBperipheral::ep0setTxBuffer();
     //epr.IRQsetRxBuffer(SharedMemoryImpl::EP0RX_ADDR,EP0_SIZE);
     //epr.IRQsetRxBuffer(SharedMemory::instance().getEP0RxAddr(),EP0_SIZE);
-    USBperipheral::ep0setRxBuffer();
+    //USBperipheral::ep0setRxBuffer();
     //USB->endpoint[0].IRQsetTxStatus(EndpointRegister::STALL);
     USBperipheral::ep0setTxStatus(RegisterStatus::STALL);
     //USB->endpoint[0].IRQsetRxStatus(EndpointRegister::STALL);
@@ -366,7 +368,8 @@ void DefCtrlPipe::IRQsetAddress()
     controlState.state=CTR_SET_ADDRESS;
     //STATUS handshake is an IN with zero bytes
     //USB->endpoint[0].IRQsetTxDataSize(0);
-    USBperipheral::ep0setTxDataSize(0);
+    //USBperipheral::ep0setTxDataSize(0);
+    USBperipheral::ep0write(0);
     IRQsetEp0TxValid();
 }
 
@@ -408,7 +411,8 @@ void DefCtrlPipe::IRQsetConfiguration()
     //STATUS handshake is an IN with zero bytes
     controlState.state=CTR_OUT_STATUS;
     //USB->endpoint[0].IRQsetTxDataSize(0);
-    USBperipheral::ep0setTxDataSize(0);
+    //USBperipheral::ep0setTxDataSize(0);
+    USBperipheral::ep0write(0);
     IRQsetEp0TxValid();
 }
 
@@ -449,10 +453,11 @@ void DefCtrlPipe::IRQstartInData(const unsigned char* data, unsigned short size)
     if(size>=EP0_SIZE)
     {
         //ep.IRQsetTxDataSize(EP0_SIZE);
-        USBperipheral::ep0setTxDataSize(EP0_SIZE);
+        //USBperipheral::ep0setTxDataSize(EP0_SIZE);
         //SharedMemory::instance().copyBytesTo(SharedMemoryImpl::EP0TX_ADDR,data,EP0_SIZE);
         //SharedMemory::instance().copyBytesTo(SharedMemory::instance().getEP0TxAddr(),data,EP0_SIZE);
-        SharedMemory::instance().copyBytesTo_NEW(0,data,EP0_SIZE);
+        //SharedMemory::instance().copyBytesTo_NEW(0,data,EP0_SIZE);
+        USBperipheral::ep0write(EP0_SIZE, data);
         controlState.state=CTR_IN_IN_PROGRESS;
         //The cast is necessary because controlState.ptr is used both for
         //IN and OUT transactions, so it can't be const. When used for IN
@@ -462,10 +467,11 @@ void DefCtrlPipe::IRQstartInData(const unsigned char* data, unsigned short size)
         Tracer::IRQtrace(Ut::IN_BUF_FILL,0,EP0_SIZE);
     } else {
         //ep.IRQsetTxDataSize(size);
-        USBperipheral::ep0setTxDataSize(size);
+        //USBperipheral::ep0setTxDataSize(size);
         //SharedMemory::instance().copyBytesTo(SharedMemoryImpl::EP0TX_ADDR,data,size);
         //SharedMemory::instance().copyBytesTo(SharedMemory::instance().getEP0TxAddr(),data,size);
-        SharedMemory::instance().copyBytesTo_NEW(0,data,size);
+        //SharedMemory::instance().copyBytesTo_NEW(0,data,size);
+        USBperipheral::ep0write(size, data);
         controlState.state=CTR_IN_STATUS_BEGIN;
         Tracer::IRQtrace(Ut::IN_BUF_FILL,0,size);
     }
@@ -492,7 +498,8 @@ void DefCtrlPipe::IRQstartCustomOutData()
 
     //SharedMemory::instance().copyBytesFrom(controlState.ptr,SharedMemoryImpl::EP0RX_ADDR,received);
     //SharedMemory::instance().copyBytesFrom(controlState.ptr,SharedMemory::instance().getEP0RxAddr(),received);
-    SharedMemory::instance().copyBytesFrom_NEW(controlState.ptr,0,received);
+    //SharedMemory::instance().copyBytesFrom_NEW(controlState.ptr,0,received);
+    USBperipheral::ep0read(controlState.ptr,received);
     controlState.ptr+=received;
     controlState.size-=received;
     
@@ -513,7 +520,8 @@ void DefCtrlPipe::IRQstartCustomOutData()
         //STATUS handshake is an IN with zero bytes
         controlState.state=CTR_OUT_STATUS;
         //USB->endpoint[0].IRQsetTxDataSize(0);
-        USBperipheral::ep0setTxDataSize(0);
+        //USBperipheral::ep0setTxDataSize(0);
+        USBperipheral::ep0write(0);
         IRQsetEp0TxValid();
     } //else STALL, since the received data was not acknowledged by user code
 }
