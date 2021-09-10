@@ -56,6 +56,13 @@ static void IRQhandleReset()
     //Set STUPCNT=3 to receive up to 3 back-to-back SETUP packets
     EP_OUT(0)->DOEPTSIZ = EP0_SIZE*3 | USB_OTG_DOEPTSIZ_PKTCNT | USB_OTG_DOEPTSIZ_STUPCNT;
 
+    USB_OTG_FS->GRSTCTL |= USB_OTG_GRSTCTL_RXFFLSH;
+    while(((USB_OTG_FS->GRSTCTL) & (USB_OTG_GRSTCTL_RXFFLSH)) != 0) ;
+
+    USB_OTG_FS->GRSTCTL &= ~USB_OTG_GRSTCTL_TXFNUM;
+    USB_OTG_FS->GRSTCTL |= USB_OTG_GRSTCTL_TXFFLSH;
+    while(((USB_OTG_FS->GRSTCTL) & (USB_OTG_GRSTCTL_TXFFLSH)) != 0) ;
+
     Tracer::logqueue.IRQpost([=]() { printf(">>[int] end reset\n"); });
 }
 

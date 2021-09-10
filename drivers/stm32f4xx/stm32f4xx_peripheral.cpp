@@ -406,7 +406,7 @@ void USBperipheral::device_initialization()
 {
     // FIELDS IN OTG_FS_DCFG
     // Device speed set at full speed and non-zero-length status  OUT handshake
-    USB_OTG_DEVICE->DCFG |= USB_OTG_DCFG_DSPD | USB_OTG_DCFG_NZLSOHSK;
+    USB_OTG_DEVICE->DCFG |= USB_OTG_DCFG_DSPD;
 
     printf("DCFG: 0x%x\n", USB_OTG_DEVICE->DCFG);
     
