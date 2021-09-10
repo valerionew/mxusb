@@ -293,6 +293,9 @@ bool USBdevice::enable(const unsigned char *device,
     #else //_MIOSIX
     __enable_irq();
     #endif //_MIOSIX
+
+    Tracer::create_thread__();
+
     return true;
 }
 

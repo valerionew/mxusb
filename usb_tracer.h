@@ -164,6 +164,7 @@ public:
     // TODO: for debugging, remove
     static miosix::FixedEventQueue<100,12> logqueue;
     static void runQueue(void *argv);
+    static void create_thread__();
 private:
     Tracer();
 

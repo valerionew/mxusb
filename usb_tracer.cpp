@@ -50,6 +50,12 @@ void Tracer::init()
     printer=Thread::create(printerThread,2048,1,0,Thread::JOINABLE);
 
     // TODO: for debugging, remove
+    // Thread::create(runQueue,2048,1,0,Thread::DEFAULT);
+
+}
+
+void Tracer::create_thread__() {
+    // TODO: for debugging, remove
     Thread::create(runQueue,2048,1,0,Thread::DEFAULT);
 }
 
@@ -57,7 +63,9 @@ void Tracer::init()
 void Tracer::runQueue(void *argv)
 {
     while (1) {
+        printf("1\n");
         logqueue.runOne();
+        printf("2\n");
     } 
 }
 
