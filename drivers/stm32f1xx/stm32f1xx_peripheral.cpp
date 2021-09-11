@@ -367,14 +367,17 @@ void USBperipheral::ep0setRxStatus(RegisterStatus status)
     USB->endpoint[0].IRQsetRxStatus(status);
 }
 
-unsigned short USBperipheral::ep0getReceivedBytes()
+unsigned short USBperipheral::ep0read(unsigned char *data, int size)
 {
-    return USB->endpoint[0].IRQgetReceivedBytes();
-}
+    unsigned short readBytes = USB->endpoint[0].IRQgetReceivedBytes();
 
-void USBperipheral::ep0read(unsigned char *data, int size)
-{
+    // if buffer size is not specified, read all bytes
+    if (size <= 0) {
+        size = readBytes;
+    }
+
     SharedMemory::instance().copyBytesFrom_NEW(data,0,size);
+    return readBytes;
 }
 
 void USBperipheral::ep0reset()

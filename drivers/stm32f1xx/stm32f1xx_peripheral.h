@@ -302,9 +302,7 @@ public:
 
     static void ep0setRxStatus(RegisterStatus status);
 
-    static unsigned short ep0getReceivedBytes();
-
-    static void ep0read(unsigned char *data, int size);
+    static unsigned short ep0read(unsigned char *data, int size = 0);
 
     static void ep0reset();
 

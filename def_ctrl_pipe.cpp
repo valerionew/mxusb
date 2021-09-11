@@ -85,14 +85,15 @@ void DefCtrlPipe::IRQsetup()
     Tracer::IRQtrace(Ut::EP0_SETUP_IRQ);
     //Setup packets are all 8 bytes long, ignore anything with a different size
     //if(USB->endpoint[0].IRQgetReceivedBytes()!=8) return;
-    if(USBperipheral::ep0getReceivedBytes()!=8) return;
 
     //Copy packet into setup struct
     unsigned char *packet=reinterpret_cast<unsigned char*>(&setup);
+    const unsigned short received=USBperipheral::ep0read(packet,sizeof(setup));
+    if(received!=8) return;
+
     //SharedMemory::instance().copyBytesFrom(packet,SharedMemoryImpl::EP0RX_ADDR,sizeof(setup));
     //SharedMemory::instance().copyBytesFrom(packet,SharedMemory::instance().getEP0RxAddr(),sizeof(setup));
     //SharedMemory::instance().copyBytesFrom_NEW(packet,0,sizeof(setup));
-    USBperipheral::ep0read(packet,sizeof(setup));
     Tracer::IRQtraceArray(Ut::EP0_VALID_SETUP,packet,sizeof(setup));
 
     if(controlState.state!=CTR_NO_REQ_PENDING)
@@ -487,7 +488,7 @@ void DefCtrlPipe::IRQstartInData(const unsigned char* data, unsigned short size)
 void DefCtrlPipe::IRQstartCustomOutData()
 {
     //const unsigned short received=USB->endpoint[0].IRQgetReceivedBytes();
-    const unsigned short received=USBperipheral::ep0getReceivedBytes();
+    const unsigned short received=USBperipheral::ep0read(controlState.ptr);
     Tracer::IRQtrace(Ut::OUT_BUF_READ,0,received);
 
     if(received>controlState.size)
@@ -499,7 +500,6 @@ void DefCtrlPipe::IRQstartCustomOutData()
     //SharedMemory::instance().copyBytesFrom(controlState.ptr,SharedMemoryImpl::EP0RX_ADDR,received);
     //SharedMemory::instance().copyBytesFrom(controlState.ptr,SharedMemory::instance().getEP0RxAddr(),received);
     //SharedMemory::instance().copyBytesFrom_NEW(controlState.ptr,0,received);
-    USBperipheral::ep0read(controlState.ptr,received);
     controlState.ptr+=received;
     controlState.size-=received;
     
