@@ -54,7 +54,7 @@ void Tracer::init()
 
 }
 
-void Tracer::create_thread__() {
+void Tracer::createQueueThread() {
     // TODO: for debugging, remove
     Thread::create(runQueue,2048,1,0,Thread::DEFAULT);
 }

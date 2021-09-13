@@ -150,6 +150,8 @@ public:
      */
     static void IRQtraceEPnR(unsigned short reg);
 
+    static void createQueueThread();
+
     #else //MXUSB_ENABLE_TRACE
     //Do nothing stubs
     static void init() {}
@@ -159,12 +161,14 @@ public:
     static void IRQtrace(Ut::TracePoint, unsigned char, unsigned char) {}
     static void IRQtraceArray(Ut::TracePoint, unsigned char *, int) {}
     static void IRQtraceEPnR(unsigned short reg) {}
+    static void createQueueThread() {}
     #endif //MXUSB_ENABLE_TRACE
 
     // TODO: for debugging, remove
+    #ifdef MXUSB_ENABLE_TRACE
     static miosix::FixedEventQueue<100,12> logqueue;
+    #endif //MXUSB_ENABLE_TRACE
     static void runQueue(void *argv);
-    static void create_thread__();
 private:
     Tracer();
 
