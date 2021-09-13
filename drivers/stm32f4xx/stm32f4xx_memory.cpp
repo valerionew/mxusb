@@ -82,7 +82,7 @@ void SharedMemoryImpl::reset()
     currentEnd = RX_FIFO_SIZE + 0x10;
 }
 
-void SharedMemoryImpl::copyBytesFrom_NEW(unsigned char *dest, unsigned char ep, unsigned short n, unsigned char idx)
+void SharedMemoryImpl::copyBytesFrom(unsigned char *dest, unsigned char ep, unsigned short n, unsigned char idx)
 {
     //note: idx is ignored because the USB peripheral does not support double buffering
 
@@ -106,7 +106,7 @@ void SharedMemoryImpl::copyBytesFrom_NEW(unsigned char *dest, unsigned char ep, 
     }
 }
 
-void SharedMemoryImpl::copyBytesTo_NEW(unsigned char ep, const unsigned char *src, unsigned short n, unsigned char idx)
+void SharedMemoryImpl::copyBytesTo(unsigned char ep, const unsigned char *src, unsigned short n, unsigned char idx)
 {
     //note: idx is ignored because the USB peripheral does not support double buffering
 

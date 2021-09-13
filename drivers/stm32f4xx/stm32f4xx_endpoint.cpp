@@ -96,7 +96,7 @@ bool EndpointImpl::write(const unsigned char *data, int size, int& written)
     EP_IN(ep)->DIEPCTL &= ~USB_OTG_DIEPCTL_STALL;
     EP_IN(ep)->DIEPCTL |= USB_OTG_DIEPCTL_EPENA | USB_OTG_DIEPCTL_CNAK;
     // push packet to TX FIFO
-    SharedMemory::instance().copyBytesTo_NEW(ep,data,written);
+    SharedMemory::instance().copyBytesTo(ep,data,written);
 
     Tracer::IRQtrace(Ut::IN_BUF_FILL,ep,written);
     return true;
@@ -117,7 +117,7 @@ bool EndpointImpl::read(unsigned char *data, int& readBytes)
 
     // pop packet from RX FIFO
     readBytes = ((USB_OTG_FS->GRXSTSR & USB_OTG_GRXSTSP_BCNT) >> 4);
-    SharedMemory::instance().copyBytesFrom_NEW(data,ep,readBytes);
+    SharedMemory::instance().copyBytesFrom(data,ep,readBytes);
     
     Tracer::IRQtrace(Ut::OUT_BUF_READ,ep,readBytes);
     return true;

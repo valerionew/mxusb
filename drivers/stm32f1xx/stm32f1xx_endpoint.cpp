@@ -65,7 +65,7 @@ bool EndpointImpl::write(const unsigned char *data, int size, int& written)
         //written=min<unsigned int>(size,getSizeOfInBuf());
         written=min<unsigned int>(size,getSizeOfBuf());
         //SharedMemory::instance().copyBytesTo(IRQgetInBuf(),data,written);
-        SharedMemory::instance().copyBytesTo_NEW(IRQgetData().epNumber,data,written,0);
+        SharedMemory::instance().copyBytesTo(IRQgetData().epNumber,data,written,0);
         epr.IRQsetTxDataSize(written);
         epr.IRQsetTxStatus(RegisterStatus::VALID);
     } else {
@@ -92,14 +92,14 @@ bool EndpointImpl::write(const unsigned char *data, int size, int& written)
             //written=min<unsigned int>(size,getSizeOfOutBuf());
             written=min<unsigned int>(size,getSizeOfBuf());
             //SharedMemory::instance().copyBytesTo(IRQgetBuf1(),data,written);
-            SharedMemory::instance().copyBytesTo_NEW(IRQgetData().epNumber,data,written,1);
+            SharedMemory::instance().copyBytesTo(IRQgetData().epNumber,data,written,1);
             epr.IRQsetTxDataSize1(written);
         } else {
             //written=min<unsigned int>(size,IRQgetSizeOfBuf0());
             //written=min<unsigned int>(size,getSizeOfOutBuf());
             written=min<unsigned int>(size,getSizeOfBuf());
             //SharedMemory::instance().copyBytesTo(IRQgetBuf0(),data,written);
-            SharedMemory::instance().copyBytesTo_NEW(IRQgetData().epNumber,data,written,0);
+            SharedMemory::instance().copyBytesTo(IRQgetData().epNumber,data,written,0);
             epr.IRQsetTxDataSize0(written);
         }
         epr.IRQtoggleDtogRx();
@@ -133,7 +133,7 @@ bool EndpointImpl::read(unsigned char *data, int& readBytes)
         if(stat!=RegisterStatus::NAK) return true; //No errors, just no data
         readBytes=epr.IRQgetReceivedBytes();
         //SharedMemory::instance().copyBytesFrom(data,IRQgetOutBuf(),readBytes);
-        SharedMemory::instance().copyBytesFrom_NEW(data,IRQgetData().epNumber,readBytes,1);
+        SharedMemory::instance().copyBytesFrom(data,IRQgetData().epNumber,readBytes,1);
         epr.IRQsetRxStatus(RegisterStatus::VALID);
     } else {
         //BULK
@@ -143,11 +143,11 @@ bool EndpointImpl::read(unsigned char *data, int& readBytes)
         {
             readBytes=epr.IRQgetReceivedBytes1();
             //SharedMemory::instance().copyBytesFrom(data,IRQgetBuf1(),readBytes);
-            SharedMemory::instance().copyBytesFrom_NEW(data,IRQgetData().epNumber,readBytes,1);
+            SharedMemory::instance().copyBytesFrom(data,IRQgetData().epNumber,readBytes,1);
         } else {
             readBytes=epr.IRQgetReceivedBytes0();
             //SharedMemory::instance().copyBytesFrom(data,IRQgetBuf0(),readBytes);
-            SharedMemory::instance().copyBytesFrom_NEW(data,IRQgetData().epNumber,readBytes,0);
+            SharedMemory::instance().copyBytesFrom(data,IRQgetData().epNumber,readBytes,0);
         }
         epr.IRQtoggleDtogTx();
     }

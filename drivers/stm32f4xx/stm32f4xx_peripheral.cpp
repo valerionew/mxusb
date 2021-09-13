@@ -499,7 +499,7 @@ unsigned short USBperipheral::ep0read(unsigned char *data, int size)
         size = readBytes;
     }
 
-    SharedMemory::instance().copyBytesFrom_NEW(data,0,size);
+    SharedMemory::instance().copyBytesFrom(data,0,size);
     return readBytes;
 }
 
@@ -549,7 +549,7 @@ bool USBperipheral::ep0write(int size, const unsigned char *data)
 
     // push packet to TX FIFO if it is not a zero-length packet
     if (size > 0) {
-        SharedMemory::instance().copyBytesTo_NEW(0,data,size);
+        SharedMemory::instance().copyBytesTo(0,data,size);
     }
     
     return true;

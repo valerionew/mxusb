@@ -66,9 +66,11 @@ namespace mxusb {
  *   endpoints are created. This memory cannot be deallocated, and is freed only
  *   when the USB device is reset or when device configuration is changed.
  */
-class SharedMemoryImpl
+class SharedMemoryImpl : public SharedMemory
 {
 public:
+    SharedMemoryImpl() {}
+
     /**
      * Allocate space for an endpoint
      * \param size memory size required (in bytes)
@@ -96,7 +98,7 @@ public:
      * \param n number of bytes to transfer
      */
     //void copyBytesFrom(unsigned char *dest, shmem_ptr src,unsigned short n);
-    void copyBytesFrom_NEW(unsigned char *dest, unsigned char ep, unsigned short n, unsigned char idx = 0);
+    void copyBytesFrom(unsigned char *dest, unsigned char ep, unsigned short n, unsigned char idx = 0);
 
     /**
      * Copy data from RAM to the shared memory
@@ -111,7 +113,7 @@ public:
      * \param n number of bytes to transfer
      */
     //void copyBytesTo(shmem_ptr dest, const unsigned char *src,unsigned short n);
-    void copyBytesTo_NEW(unsigned char ep, const unsigned char *src, unsigned short n, unsigned char idx = 0);
+    void copyBytesTo(unsigned char ep, const unsigned char *src, unsigned short n, unsigned char idx = 0);
 
     /**
      * Access a short int into an endpoint.
@@ -143,6 +145,9 @@ public:
     //const shmem_ptr getEP0RxAddr();
 
 private:
+    SharedMemoryImpl(const SharedMemoryImpl&);
+    SharedMemoryImpl& operator= (const SharedMemoryImpl&);
+
     static shmem_ptr currentEnd;/// Pointer to the first free byte
 };
 

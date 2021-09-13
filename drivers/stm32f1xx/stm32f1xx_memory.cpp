@@ -67,8 +67,23 @@ void SharedMemoryImpl::reset()
     currentEnd=DYNAMIC_AREA;
 }
 
-void SharedMemoryImpl::copyBytesFrom(unsigned char *dest, shmem_ptr src,
-        unsigned short n)
+void SharedMemoryImpl::copyBytesFrom(unsigned char *dest, unsigned char ep, unsigned short n, unsigned char idx)
+{
+    // handle ep0 with static address
+    if (ep == 0) {
+        doCopyBytesFrom(dest, SharedMemoryImpl::EP0RX_ADDR, n);
+        return;
+    }
+
+    if (idx == 0) {
+        doCopyBytesFrom(dest, buf_table[ep].buf0, n);
+    }
+    else if (idx == 1) {
+        doCopyBytesFrom(dest, buf_table[ep].buf1, n);
+    }
+}
+
+void SharedMemoryImpl::doCopyBytesFrom(unsigned char *dest, shmem_ptr src, unsigned short n)
 {
     //Use optimized version if dest is two words aligned
     if((reinterpret_cast<unsigned int>(dest) & 1)==0)
@@ -89,24 +104,24 @@ void SharedMemoryImpl::copyBytesFrom(unsigned char *dest, shmem_ptr src,
         if((i & 1)==1) src2+=2;
     }
 }
-void SharedMemoryImpl::copyBytesFrom_NEW(unsigned char *dest, unsigned char ep, unsigned short n, unsigned char idx)
+
+void SharedMemoryImpl::copyBytesTo(unsigned char ep, const unsigned char *src, unsigned short n, unsigned char idx)
 {
     // handle ep0 with static address
     if (ep == 0) {
-        copyBytesFrom(dest, SharedMemoryImpl::EP0RX_ADDR, n);
+        doCopyBytesTo(SharedMemoryImpl::EP0TX_ADDR, src, n);
         return;
     }
 
     if (idx == 0) {
-        copyBytesFrom(dest, buf_table[ep].buf0, n);
+        doCopyBytesTo(buf_table[ep].buf0, src, n);
     }
     else if (idx == 1) {
-        copyBytesFrom(dest, buf_table[ep].buf1, n);
+        doCopyBytesTo(buf_table[ep].buf1, src, n);
     }
 }
 
-void SharedMemoryImpl::copyBytesTo(shmem_ptr dest, const unsigned char *src,
-        unsigned short n)
+void SharedMemoryImpl::doCopyBytesTo(shmem_ptr dest, const unsigned char *src, unsigned short n)
 {
     //Use optimized version if dest is two words aligned
     if((reinterpret_cast<unsigned int>(src) & 1)==0)
@@ -120,21 +135,6 @@ void SharedMemoryImpl::copyBytesTo(shmem_ptr dest, const unsigned char *src,
     //Use slow version if dest is not two words aligned
     n=(n+1) & ~1; //Rount to upper # divisible by two
     for(int i=0;i<n;i+=2) shortAt(dest+i)=toShort(&src[i]);
-}
-void SharedMemoryImpl::copyBytesTo_NEW(unsigned char ep, const unsigned char *src, unsigned short n, unsigned char idx)
-{
-    // handle ep0 with static address
-    if (ep == 0) {
-        copyBytesTo(SharedMemoryImpl::EP0TX_ADDR, src, n);
-        return;
-    }
-
-    if (idx == 0) {
-        copyBytesTo(buf_table[ep].buf0, src, n);
-    }
-    else if (idx == 1) {
-        copyBytesTo(buf_table[ep].buf1, src, n);
-    }
 }
 
 unsigned int& SharedMemoryImpl::shortAt(shmem_ptr ptr)

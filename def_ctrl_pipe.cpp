@@ -29,7 +29,6 @@
 #include <cstdio>
 #include <config/usb_config.h>
 #include "def_ctrl_pipe.h"
-#include "shared_memory.h"
 #include "usb_util.h"
 #include "usb_tracer.h"
 #include "ep0.h"

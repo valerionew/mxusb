@@ -80,7 +80,7 @@ unsigned int* const USB_RAM=reinterpret_cast<unsigned int*>(0x40006000);
  *   endpoints are created. This memory cannot be deallocated, and is freed only
  *   when the USB device is reset or when device configuration is changed.
  */
-class SharedMemoryImpl
+class SharedMemoryImpl : public SharedMemory
 {
 public:
 
@@ -100,6 +100,8 @@ public:
     static const shmem_ptr DYNAMIC_AREA=EP0RX_ADDR+EP0_SIZE;
     /// \internal address one past the last byte in the dynamic area
     static const shmem_ptr END=512;
+
+    SharedMemoryImpl() {}
     
     /**
      * Allocate space for an endpoint
@@ -128,7 +130,7 @@ public:
      * \param n number of bytes to transfer
      */
     //void copyBytesFrom(unsigned char *dest, shmem_ptr src,unsigned short n);
-    void copyBytesFrom_NEW(unsigned char *dest, unsigned char ep, unsigned short n, unsigned char idx = 0);
+    void copyBytesFrom(unsigned char *dest, unsigned char ep, unsigned short n, unsigned char idx = 0);
     
 
     /**
@@ -144,7 +146,7 @@ public:
      * \param n number of bytes to transfer
      */
     //void copyBytesTo(shmem_ptr dest, const unsigned char *src,unsigned short n);
-    void copyBytesTo_NEW(unsigned char ep, const unsigned char *src, unsigned short n, unsigned char idx = 0);
+    void copyBytesTo(unsigned char ep, const unsigned char *src, unsigned short n, unsigned char idx = 0);
 
     /**
      * Access a short int into an endpoint.
@@ -176,12 +178,15 @@ public:
     //const shmem_ptr getEP0RxAddr();
 
 private:
+    SharedMemoryImpl(const SharedMemoryImpl&);
+    SharedMemoryImpl& operator= (const SharedMemoryImpl&);
+
+    void doCopyBytesFrom(unsigned char *dest, shmem_ptr src,unsigned short n);
+    void doCopyBytesTo(shmem_ptr dest, const unsigned char *src,unsigned short n);
+
     static shmem_ptr currentEnd;/// Pointer to the first free byte
 
     ep_buf buf_table[NUM_ENDPOINTS];
-
-    void copyBytesFrom(unsigned char *dest, shmem_ptr src,unsigned short n);
-    void copyBytesTo(shmem_ptr dest, const unsigned char *src,unsigned short n);
 };
 
 } //namespace mxusb

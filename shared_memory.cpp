@@ -59,9 +59,9 @@ void SharedMemory::reset()
 {
     pImpl->copyBytesFrom(dest, src, n);
 }*/
-void SharedMemory::copyBytesFrom_NEW(unsigned char *dest, unsigned char ep, unsigned short n, unsigned char idx)
+void SharedMemory::copyBytesFrom(unsigned char *dest, unsigned char ep, unsigned short n, unsigned char idx)
 {
-    pImpl->copyBytesFrom_NEW(dest, ep, n, idx);
+    pImpl->copyBytesFrom(dest, ep, n, idx);
 }
 
 /*void SharedMemory::copyBytesTo(shmem_ptr dest, const unsigned char *src,
@@ -69,9 +69,9 @@ void SharedMemory::copyBytesFrom_NEW(unsigned char *dest, unsigned char ep, unsi
 {
     pImpl->copyBytesTo(dest, src, n);
 }*/
-void SharedMemory::copyBytesTo_NEW(unsigned char ep, const unsigned char *src, unsigned short n, unsigned char idx)
+void SharedMemory::copyBytesTo(unsigned char ep, const unsigned char *src, unsigned short n, unsigned char idx)
 {
-    pImpl->copyBytesTo_NEW(ep, src, n, idx);
+    pImpl->copyBytesTo(ep, src, n, idx);
 }
 
 /*unsigned int& SharedMemory::shortAt(shmem_ptr ptr)
