@@ -266,11 +266,11 @@ bool USBdevice::enable(const unsigned char *device,
     #endif //_MIOSIX
     
     //Configure gpio for USB pullup
-    USBgpio::init();
+    USBgpio::instance().init();
     iprintf("Init finished\n");
     
     //Enable clock to USB peripheral
-    if (!USBperipheral::enable()) {
+    if (!USBperipheral::instance().enable()) {
         //USB can't work with other clock frequencies
         #ifndef _MIOSIX
         __enable_irq();
@@ -279,14 +279,14 @@ bool USBdevice::enable(const unsigned char *device,
     }
 
     //Connect pull-up to vcc
-    USBgpio::enablePullup();
+    USBgpio::instance().enablePullup();
 
     // Reset USB peripheral
-    USBperipheral::reset();
+    USBperipheral::instance().reset();
     
     DeviceStateImpl::IRQsetState(USBdevice::DEFAULT);
 
-    USBperipheral::configureInterrupts();
+    USBperipheral::instance().configureInterrupts();
 
     #ifdef _MIOSIX
     }
@@ -294,7 +294,7 @@ bool USBdevice::enable(const unsigned char *device,
     __enable_irq();
     #endif //_MIOSIX
 
-    Tracer::create_thread__();
+    Tracer::createQueueThread();
 
     return true;
 }
@@ -308,10 +308,10 @@ void USBdevice::disable()
     __disable_irq();
     #endif //_MIOSIX
 
-    USBgpio::disablePullup();
+    USBgpio::instance().disablePullup();
     for(int i=1;i<NUM_ENDPOINTS;i++) EndpointImpl::get(i)->IRQdeconfigure(i);
     SharedMemory::instance().reset();
-    USBperipheral::disable();
+    USBperipheral::instance().disable();
     DeviceStateImpl::IRQsetState(USBdevice::DEFAULT);
     DeviceStateImpl::IRQsetConfiguration(0);
     #ifdef _MIOSIX

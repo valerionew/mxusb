@@ -119,9 +119,9 @@ public:
     static void IRQstatusNak()
     {
         //USB->endpoint[0].IRQsetTxStatus(EndpointRegister::NAK);
-        USBperipheral::ep0setTxStatus(RegisterStatus::NAK);
+        USBperipheral::instance().ep0setTxStatus(RegisterStatus::NAK);
         //USB->endpoint[0].IRQsetRxStatus(EndpointRegister::NAK);
-        USBperipheral::ep0setRxStatus(RegisterStatus::NAK);
+        USBperipheral::instance().ep0setRxStatus(RegisterStatus::NAK);
         txUntouchedFlag=true;
         rxUntouchedFlag=true;
     }

@@ -292,21 +292,21 @@ bool EndpointRegister::IRQgetDtogRx() const
 // class USBperipheral
 //
 
-void USBperipheral::setAddress(unsigned short addr)
+void USBperipheralImpl::setAddress(unsigned short addr)
 {
     // USB->DADDR = addr;
     USB_OTG_DEVICE->DCFG &= ~(USB_OTG_DCFG_DAD);
     USB_OTG_DEVICE->DCFG |= (addr << 4) & USB_OTG_DCFG_DAD;
 }
 
-void USBperipheral::configureInterrupts()
+void USBperipheralImpl::configureInterrupts()
 {
     //Configure interrupts
     NVIC_EnableIRQ(OTG_FS_IRQn);
     NVIC_SetPriority(OTG_FS_IRQn,3);//Higher priority (Max=0, min=15)
 }
 
-bool USBperipheral::enable()
+bool USBperipheralImpl::enable()
 {
     // F1 CODE
     //Enable clock to USB peripheral
@@ -353,7 +353,7 @@ bool USBperipheral::enable()
     }
 }
 
-void USBperipheral::power_on()
+void USBperipheralImpl::power_on()
 {
     // Enable clock to OTG FS peripheral
     RCC->AHB2ENR |= RCC_AHB2ENR_OTGFSEN;
@@ -370,7 +370,7 @@ void USBperipheral::power_on()
     *PCGCCTL = 0;
 }
 
-void USBperipheral::core_initialization()
+void USBperipheralImpl::core_initialization()
 {
     // FIELDS IN OTG_FS_GAHBCFG REGISTER
     // Global interrupt mask bit GINTMSK = 1
@@ -402,7 +402,7 @@ void USBperipheral::core_initialization()
     printf("GINTMSK: 0x%x\n", USB_OTG_FS->GINTMSK);
 }
 
-void USBperipheral::device_initialization()
+void USBperipheralImpl::device_initialization()
 {
     // FIELDS IN OTG_FS_DCFG
     // Device speed set at full speed and non-zero-length status  OUT handshake
@@ -431,7 +431,7 @@ void USBperipheral::device_initialization()
     printf("GCCFG: 0x%x\n", USB_OTG_FS->GCCFG);
 }
 
-void USBperipheral::reset()
+void USBperipheralImpl::reset()
 {
     // Clear pending interrupts
     USB_OTG_FS->GINTSTS = 0xFFFFFFFF;
@@ -445,7 +445,7 @@ void USBperipheral::reset()
     // USB->CNTR=USB_CNTR_RESETM;
 }
 
-void USBperipheral::disable()
+void USBperipheralImpl::disable()
 {
     // USB->DADDR=0;  //Clear EF bit
     // USB->CNTR=USB_CNTR_PDWN | USB_CNTR_FRES;
@@ -458,7 +458,7 @@ void USBperipheral::disable()
     RCC->AHB2ENR &= ~RCC_AHB2ENR_OTGFSEN; // disable clock to USB peripheral
 }
 
-void USBperipheral::ep0setTxStatus(RegisterStatus status)
+void USBperipheralImpl::ep0setTxStatus(RegisterStatus status)
 {
     // USB->endpoint[0].IRQsetTxStatus(status);
     if (status == RegisterStatus::STALL) {
@@ -474,7 +474,7 @@ void USBperipheral::ep0setTxStatus(RegisterStatus status)
     }
 }
 
-void USBperipheral::ep0setRxStatus(RegisterStatus status)
+void USBperipheralImpl::ep0setRxStatus(RegisterStatus status)
 {
     // USB->endpoint[0].IRQsetRxStatus(status);
     if (status == RegisterStatus::STALL) {
@@ -490,7 +490,7 @@ void USBperipheral::ep0setRxStatus(RegisterStatus status)
     }
 }
 
-unsigned short USBperipheral::ep0read(unsigned char *data, int size)
+unsigned short USBperipheralImpl::ep0read(unsigned char *data, int size)
 {
     unsigned short readBytes = ((USB_OTG_FS->GRXSTSR & USB_OTG_GRXSTSP_BCNT) >> 4);
 
@@ -503,7 +503,7 @@ unsigned short USBperipheral::ep0read(unsigned char *data, int size)
     return readBytes;
 }
 
-void USBperipheral::ep0reset()
+void USBperipheralImpl::ep0reset()
 {
     // USB->endpoint[0] = 0;
     uint8_t size;
@@ -522,21 +522,21 @@ void USBperipheral::ep0reset()
     // the EP0 tx and shared rx buffers are allocated and managed in F4 SharedMemoryImpl class
 }
 
-void USBperipheral::ep0beginStatusTransaction()
+void USBperipheralImpl::ep0beginStatusTransaction()
 {
     // NOTE: empty method
     // implemented in F1 driver
     // does not have an equivalent in F4 driver
 }
 
-void USBperipheral::ep0endStatusTransaction()
+void USBperipheralImpl::ep0endStatusTransaction()
 {
     // NOTE: empty method
     // implemented in F1 driver
     // does not have an equivalent in F4 driver
 }
 
-bool USBperipheral::ep0write(int size, const unsigned char *data)
+bool USBperipheralImpl::ep0write(int size, const unsigned char *data)
 {
     //No enough space in TX fifo
     uint32_t len = (size + 0x03) >> 2;

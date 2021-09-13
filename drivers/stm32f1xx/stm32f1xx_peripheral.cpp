@@ -305,12 +305,12 @@ bool EndpointRegister::IRQgetDtogRx() const
 // class USBperipheral
 //
 
-void USBperipheral::setAddress(unsigned short addr)
+void USBperipheralImpl::setAddress(unsigned short addr)
 {
     USB->DADDR = addr | USB_DADDR_EF;
 }
 
-void USBperipheral::configureInterrupts()
+void USBperipheralImpl::configureInterrupts()
 {
     //Configure interrupts
     NVIC_EnableIRQ(USB_HP_CAN1_TX_IRQn);
@@ -319,7 +319,7 @@ void USBperipheral::configureInterrupts()
     NVIC_SetPriority(USB_LP_CAN1_RX0_IRQn,4);//High priority (Max=0, min=15)
 }
 
-bool USBperipheral::enable()
+bool USBperipheralImpl::enable()
 {
     //Enable clock to USB peripheral
     #if __CM3_CMSIS_VERSION >= 0x010030 //CMSIS 1.3 changed variable names
@@ -338,7 +338,7 @@ bool USBperipheral::enable()
     return true;
 }
 
-void USBperipheral::reset()
+void USBperipheralImpl::reset()
 {
     USB->CNTR=USB_CNTR_FRES; //Clear PDWN, leave FRES asserted
     delayUs(1);  //Wait till USB analog circuitry stabilizes
@@ -349,7 +349,7 @@ void USBperipheral::reset()
     USB->CNTR=USB_CNTR_RESETM;
 }
 
-void USBperipheral::disable()
+void USBperipheralImpl::disable()
 {
     USB->DADDR=0;  //Clear EF bit
     USB->CNTR=USB_CNTR_PDWN | USB_CNTR_FRES;
@@ -357,17 +357,17 @@ void USBperipheral::disable()
     RCC->APB1ENR &= ~RCC_APB1ENR_USBEN;
 }
 
-void USBperipheral::ep0setTxStatus(RegisterStatus status)
+void USBperipheralImpl::ep0setTxStatus(RegisterStatus status)
 {
     USB->endpoint[0].IRQsetTxStatus(status);
 }
 
-void USBperipheral::ep0setRxStatus(RegisterStatus status)
+void USBperipheralImpl::ep0setRxStatus(RegisterStatus status)
 {
     USB->endpoint[0].IRQsetRxStatus(status);
 }
 
-unsigned short USBperipheral::ep0read(unsigned char *data, int size)
+unsigned short USBperipheralImpl::ep0read(unsigned char *data, int size)
 {
     unsigned short readBytes = USB->endpoint[0].IRQgetReceivedBytes();
 
@@ -380,7 +380,7 @@ unsigned short USBperipheral::ep0read(unsigned char *data, int size)
     return readBytes;
 }
 
-void USBperipheral::ep0reset()
+void USBperipheralImpl::ep0reset()
 {
     // reset register
     USB->endpoint[0] = 0;
@@ -392,17 +392,17 @@ void USBperipheral::ep0reset()
     USB->endpoint[0].IRQsetRxBuffer(SharedMemoryImpl::EP0RX_ADDR, EP0_SIZE);
 }
 
-void USBperipheral::ep0beginStatusTransaction()
+void USBperipheralImpl::ep0beginStatusTransaction()
 {
     USB->endpoint[0].IRQsetEpKind();
 }
 
-void USBperipheral::ep0endStatusTransaction()
+void USBperipheralImpl::ep0endStatusTransaction()
 {
     USB->endpoint[0].IRQclearEpKind();
 }
 
-bool USBperipheral::ep0write(int size, const unsigned char *data)
+bool USBperipheralImpl::ep0write(int size, const unsigned char *data)
 {
     // push packet to TX FIFO if it is not a zero-length packet
     if (size > 0) {

@@ -11,6 +11,8 @@
 #include "libraries/gpio.h"
 #endif //_MIOSIX
 
+#include "usb_gpio.h"
+
 namespace mxusb {
 
 /**
@@ -20,7 +22,7 @@ namespace mxusb {
  * the board used, since the GPIO that can be used for this purpose is not
  * unique.
  */
-class USBgpio
+class USBgpioImpl : public USBgpio
 {
 private:
     /*
@@ -41,7 +43,7 @@ public:
      * \internal
      * Initializes USB related GPIOs
      */
-    static void init()
+    void init()
     {
         #ifdef _MIOSIX
         using namespace miosix;
@@ -58,7 +60,7 @@ public:
      * Enable 1.5K pullup resistor, to signal to the host that a devce has
      * been connected.
      */
-    static void enablePullup()
+    void enablePullup()
     {
         disconnect::low();
     }
@@ -68,7 +70,7 @@ public:
      * Disable the 1.5K pullup resistor, to signal to the host that the device
      * has been disconnected.
      */
-    static void disablePullup()
+    void disablePullup()
     {
         disconnect::high();
     }

@@ -2,6 +2,7 @@
 #define	STM32F4XX_PERIPHERAL_H
 
 #include "drivers/stm32f4xx/stm32f4xx_memory.h"
+#include "drivers/stm32f4xx/stm32f4xx_enums.h"
 
 #ifdef _MIOSIX
 #include "interfaces/arch_registers.h"
@@ -11,30 +12,11 @@ using namespace miosix;
 #include "stm32f4xx.h"
 #endif //_MIOSIX
 
+#include "usb_peripheral.h"
+
 #ifdef _BOARD_STM32F4DISCOVERY
 
 namespace mxusb {
-
-/**
- * Note: bitmask for Descriptor::Type (bitmask used in standard USB
- * descriptors) differ from Endpoint::Type (bitmask used in stm32's EPnR
- * register bits for endpoint types)
- */
-enum RegisterType
-{
-    CONTROL=0,
-    ISOCHRONOUS=1,
-    BULK=2,
-    INTERRUPT=3
-};
-
-enum RegisterStatus
-{
-    DISABLED=0,
-    STALL=1<<0,
-    NAK=1<<1,
-    VALID=(1<<0) | (1<<1)
-};
 
 /**
  * \internal
@@ -270,43 +252,43 @@ inline static USB_OTG_OUTEndpointTypeDef* EP_OUT(unsigned char ep) {
  * \internal
  * Hardware Abstraction Layer for the USB peripheral registers
  */
-class USBperipheral
+class USBperipheralImpl : public USBperipheral
 {
 public:
-    static void setAddress(unsigned short addr);
+    void setAddress(unsigned short addr);
 
-    static void configureInterrupts();
+    void configureInterrupts();
 
     /**
      * \brief The enable method of the stm32f4 is supposed to support PERIPHERAL ONLY mode.
      * Hence, SRP and HNP are both disabled and the mode is forced to be peripheral only.
      */
-    static bool enable();
+    bool enable();
 
-    static void reset();
+    void reset();
 
-    static void disable();
+    void disable();
 
-    static void ep0setTxStatus(RegisterStatus status);
+    void ep0setTxStatus(RegisterStatus status);
 
-    static void ep0setRxStatus(RegisterStatus status);
+    void ep0setRxStatus(RegisterStatus status);
 
-    static unsigned short ep0read(unsigned char *data, int size = 0);
+    unsigned short ep0read(unsigned char *data, int size = 0);
 
-    static void ep0reset();
+    void ep0reset();
 
-    static void ep0beginStatusTransaction();
+    void ep0beginStatusTransaction();
 
-    static void ep0endStatusTransaction();
+    void ep0endStatusTransaction();
 
-    static bool ep0write(int size, const unsigned char *data = nullptr);
+    bool ep0write(int size, const unsigned char *data = nullptr);
 
 private:
-    static void core_initialization();
+    void core_initialization();
 
-    static void power_on();
+    void power_on();
 
-    static void device_initialization();
+    void device_initialization();
 };
 
 } //namespace mxusb

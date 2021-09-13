@@ -17,6 +17,8 @@ def_ctrl_pipe.cpp                                                          \
 shared_memory.cpp                                                          \
 usb_tracer.cpp															   \
 device_state.cpp														   \
+usb_gpio.cpp															   \
+usb_peripheral.cpp														   \
 endpoint_base_impl.cpp													   \
 drivers/stm32f1xx/stm32f1xx_endpoint.cpp								   \
 drivers/stm32f1xx/stm32f1xx_interrupts.cpp								   \
