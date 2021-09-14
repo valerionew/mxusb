@@ -37,15 +37,8 @@
 
 namespace mxusb {
 
-///\internal
-///Pointer to USB shared memory. Data is organized as 16bit integers, but
-///aligned to 32bit boundaries, leaving 2 bytes gaps.
-///Because of that, even if the access is performed as a pointer to int,
-///the upper two bytes always read as zero
-//unsigned int* const USB_RAM=reinterpret_cast<unsigned int*>(0x40006000);
-
 /**
- * \inetrnal
+ * \internal
  * This type represents a pointer into the shared memory area.
  * Its values can range from 0 to SharedMemory::END-1
  * The pointer is a pointer to char *, so it can address individual bytes
@@ -104,7 +97,6 @@ public:
      * result+n-2 are valid pointers
      * \param n number of bytes to transfer
      */
-    //void copyBytesFrom(unsigned char *dest, shmem_ptr src,unsigned short n);
     void copyBytesFrom(unsigned char *dest, unsigned char ep, unsigned short n, unsigned char idx = 0);
 
     /**
@@ -119,37 +111,7 @@ public:
      * \param src pointer to a normal buffer already allocated in RAM
      * \param n number of bytes to transfer
      */
-    //void copyBytesTo(shmem_ptr dest, const unsigned char *src,unsigned short n);
     void copyBytesTo(unsigned char ep, const unsigned char *src, unsigned short n, unsigned char idx = 0);
-
-    /**
-     * Access a short int into an endpoint.
-     * \param ptr pointer into shared memory. Pointer must be two bytes aligned.
-     * Assuming for example that result=allocate(n) was called,
-     * result, result+2, result+4 .., result+n-2 are valid pointers for that
-     * endpoint. Due to restrictions on the underlying hardware, the returned
-     * reference is to an int, but only the first two bytes are accessible.
-     * \return a reference to read/write into that memory location.
-     */
-    //unsigned int& shortAt(shmem_ptr ptr);
-
-    /**
-     * Access a byte int into an endpoint.
-     * \param ptr pointer into shared memory.
-     * Assuming for example that result=allocate(n) was called,
-     * result, result+1, result+2 .., result+n-1 are valid pointers for that
-     * endpoint.
-     * \return the byte value into that memory location. Note that write access
-     * is not allowed on a byte basis. To write into the shared memory, use
-     * shortAt()
-     */
-    //const unsigned char charAt(shmem_ptr ptr);
-
-    //const unsigned short getEP0Size();
-
-    //const shmem_ptr getEP0TxAddr();
-
-    //const shmem_ptr getEP0RxAddr();
 
 private:
     SharedMemory(const SharedMemory&);

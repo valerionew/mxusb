@@ -1,7 +1,7 @@
 #ifndef USB_PERIPHERAL_H
 #define	USB_PERIPHERAL_H
 
-#include "usb_enums.h"
+#include "usb_hal_include.h"
 
 namespace mxusb {
 

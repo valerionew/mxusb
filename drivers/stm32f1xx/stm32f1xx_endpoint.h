@@ -7,13 +7,8 @@
 #endif //MXUSB_LIBRARY
 
 #include "usb.h"
-//#include "endpoint_reg.h"
-//#include "stm32_usb_regs.h"
-//FIXME: include should be implementation independent
 #include "drivers/stm32f1xx/stm32f1xx_peripheral.h"
-
 #include "device_state.h"
-
 #include "endpoint_base_impl.h"
 
 #ifdef _BOARD_STM32F103C8_BREAKOUT

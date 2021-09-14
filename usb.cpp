@@ -26,20 +26,14 @@
  ***************************************************************************/
 
 #include "usb.h"
-//#include "stm32_usb_regs.h"
-//FIXME: include should be implementation independent
-#include "drivers/stm32f1xx/stm32f1xx_peripheral.h"
-#include "drivers/stm32f4xx/stm32f4xx_peripheral.h"
+#include "usb_peripheral.h"
 #include "shared_memory.h"
 #include "def_ctrl_pipe.h"
 #include "usb_tracer.h"
 //FIXME: include should be implementation independent
 #include "drivers/stm32f1xx/stm32f1xx_endpoint.h"
 #include "drivers/stm32f4xx/stm32f4xx_endpoint.h"
-//#include <config/usb_gpio.h>
-//FIXME: include should be implementation independent
-#include "drivers/stm32f1xx/stm32f1xx_gpio.h"
-#include "drivers/stm32f4xx/stm32f4xx_gpio.h"
+#include "usb_gpio.h"
 #include <config/usb_config.h>
 #include <algorithm>
 
@@ -99,13 +93,11 @@ bool Endpoint::isOutSideEnabled() const
 
 unsigned short Endpoint::inSize() const
 {
-    //return pImpl->getSizeOfInBuf();
     return pImpl->getSizeOfBuf();
 }
 
 unsigned short Endpoint::outSize() const
 {
-    //return pImpl->getSizeOfOutBuf();
     return pImpl->getSizeOfBuf();
 }
 
@@ -294,7 +286,7 @@ bool USBdevice::enable(const unsigned char *device,
     __enable_irq();
     #endif //_MIOSIX
 
-    Tracer::createQueueThread();
+    Tracer::runLogQueue();
 
     return true;
 }

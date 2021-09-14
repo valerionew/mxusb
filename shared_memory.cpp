@@ -54,50 +54,15 @@ void SharedMemory::reset()
     pImpl->reset();
 }
 
-/*void SharedMemory::copyBytesFrom(unsigned char *dest, shmem_ptr src,
-        unsigned short n)
-{
-    pImpl->copyBytesFrom(dest, src, n);
-}*/
 void SharedMemory::copyBytesFrom(unsigned char *dest, unsigned char ep, unsigned short n, unsigned char idx)
 {
     pImpl->copyBytesFrom(dest, ep, n, idx);
 }
 
-/*void SharedMemory::copyBytesTo(shmem_ptr dest, const unsigned char *src,
-        unsigned short n)
-{
-    pImpl->copyBytesTo(dest, src, n);
-}*/
 void SharedMemory::copyBytesTo(unsigned char ep, const unsigned char *src, unsigned short n, unsigned char idx)
 {
     pImpl->copyBytesTo(ep, src, n, idx);
 }
-
-/*unsigned int& SharedMemory::shortAt(shmem_ptr ptr)
-{
-    return pImpl->shortAt(ptr);
-}
-
-const unsigned char SharedMemory::charAt(shmem_ptr ptr)
-{
-    return pImpl->charAt(ptr);
-}
-
-const unsigned short SharedMemory::getEP0Size()
-{
-    return pImpl->getEP0Size();
-}
-
-const shmem_ptr SharedMemory::getEP0TxAddr()
-{
-    return pImpl->getEP0TxAddr();
-}
-
-const shmem_ptr SharedMemory::getEP0RxAddr()
-{
-    return pImpl->getEP0RxAddr();
-}*/
 
 SharedMemory::SharedMemory(SharedMemoryImpl *impl) : pImpl(impl) {}
 

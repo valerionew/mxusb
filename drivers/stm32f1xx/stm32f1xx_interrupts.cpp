@@ -1,10 +1,8 @@
-//#include "stm32_usb_regs.h"
-//FIXME: include should be implementation independent
 #include "drivers/stm32f1xx/stm32f1xx_peripheral.h"
+#include "drivers/stm32f1xx/stm32f1xx_endpoint.h"
+#include "drivers/stm32f1xx/stm32f1xx_memory.h"
 #include "def_ctrl_pipe.h"
 #include "usb_tracer.h"
-//FIXME: include should be implementation independent
-#include "drivers/stm32f1xx/stm32f1xx_endpoint.h"
 #include <config/usb_config.h>
 
 #ifdef _MIOSIX
@@ -15,8 +13,6 @@ using namespace miosix;
 #else //_MIOSIX
 #include "libraries/system.h"
 #endif //_MIOSIX
-
-#include "drivers/stm32f1xx/stm32f1xx_memory.h"
 
 #ifdef _BOARD_STM32F103C8_BREAKOUT
 
@@ -32,8 +28,6 @@ static void IRQhandleReset()
 
     USB->DADDR=0;  //Disable transaction handling
     USB->ISTR=0;   //When the device is reset, clear all pending interrupts
-    //USB->BTABLE=SharedMemory::BTABLE_ADDR; //Set BTABLE
-
     USB->BTABLE=SharedMemoryImpl::BTABLE_ADDR; //Set BTABLE
 
     for(int i=1;i<NUM_ENDPOINTS;i++) EndpointImpl::get(i)->IRQdeconfigure(i);

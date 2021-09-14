@@ -155,10 +155,6 @@ protected:
 
     EpData data;            ///< Endpoint data (status, type, number)
     unsigned char bufCount; ///< Buffer count, used for double buffered BULK
-    //unsigned char size0;    ///< Size of buf0 (if type==BULK size0==size1)
-    //unsigned char size1;    ///< Size of buf1 (if type==BULK size0==size1)
-    //shmem_ptr buf0;         ///< IN  buffer for INTERRUPT, buf0 for BULK
-    //shmem_ptr buf1;         ///< OUT buffer for INTERRUPT, buf1 for BULK
     unsigned char bufSize;
 
     #ifdef _MIOSIX

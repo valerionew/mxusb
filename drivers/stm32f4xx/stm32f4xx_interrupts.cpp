@@ -1,10 +1,8 @@
-//#include "stm32_usb_regs.h"
-//FIXME: include should be implementation independent
 #include "drivers/stm32f4xx/stm32f4xx_peripheral.h"
+#include "drivers/stm32f4xx/stm32f4xx_endpoint.h"
+#include "drivers/stm32f4xx/stm32f4xx_memory.h"
 #include "def_ctrl_pipe.h"
 #include "usb_tracer.h"
-//FIXME: include should be implementation independent
-#include "drivers/stm32f4xx/stm32f4xx_endpoint.h"
 #include <config/usb_config.h>
 
 #ifdef _MIOSIX
@@ -16,7 +14,6 @@ using namespace miosix;
 #include "libraries/system.h"
 #endif //_MIOSIX
 
-#include "drivers/stm32f4xx/stm32f4xx_memory.h"
 
 #ifdef _BOARD_STM32F4DISCOVERY
 
@@ -30,10 +27,8 @@ static void IRQhandleReset()
 {
     Tracer::IRQtrace(Ut::DEVICE_RESET);
 
-    //USB->DADDR=0;  //Disable transaction handling 
     USB_OTG_FS->GINTSTS = 0xFFFFFFFF; //When the device is reset, clear all pending interrupts
 
-    //for(int i=1;i<NUM_ENDPOINTS;i++) EndpointImpl::get(i)->IRQdeconfigure(i);
     // deconfigure all endpoints
     for (int i = 0; i < NUM_ENDPOINTS; i++) {
         EndpointImpl::get(i)->IRQdeconfigure(i);
@@ -43,10 +38,6 @@ static void IRQhandleReset()
 
     //After a reset device address is zero, enable transaction handling
     USB_OTG_DEVICE->DCFG &= ~(USB_OTG_DCFG_DAD);
-    // USB->DADDR=0 | USB_DADDR_EF;
-
-    // //Enable more interrupt sources now that reset happened
-    // USB->CNTR=USB_CNTR_CTRM | USB_CNTR_SUSPM | USB_CNTR_WKUPM | USB_CNTR_RESETM;
 
     // Unmask RX and TX interrupts on EP0
     USB_OTG_DEVICE->DAINTMSK |= 0x00010001;

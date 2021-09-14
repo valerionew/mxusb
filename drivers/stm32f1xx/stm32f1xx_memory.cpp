@@ -142,26 +142,6 @@ unsigned int& SharedMemoryImpl::shortAt(shmem_ptr ptr)
     return *(USB_RAM+(ptr>>1));
 }
 
-/*const unsigned char SharedMemoryImpl::charAt(shmem_ptr ptr)
-{
-    return *(reinterpret_cast<unsigned char *>(USB_RAM+(ptr>>1))+(ptr & 1));
-}
-
-const unsigned short SharedMemoryImpl::getEP0Size()
-{
-    return SharedMemoryImpl::EP0_SIZE;
-}
-
-const shmem_ptr SharedMemoryImpl::getEP0TxAddr()
-{
-    return SharedMemoryImpl::EP0TX_ADDR;
-}
-
-const shmem_ptr SharedMemoryImpl::getEP0RxAddr()
-{
-    return SharedMemoryImpl::EP0RX_ADDR;
-}*/
-
 shmem_ptr SharedMemoryImpl::currentEnd=DYNAMIC_AREA;
 
 } //namespace mxusb

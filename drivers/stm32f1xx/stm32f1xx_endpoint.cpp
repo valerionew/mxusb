@@ -61,10 +61,7 @@ bool EndpointImpl::write(const unsigned char *data, int size, int& written)
     {
         //INTERRUPT
         if(stat!=RegisterStatus::NAK) return true;//No error, just buffer full
-        //written=min<unsigned int>(size,IRQgetSizeOfInBuf());
-        //written=min<unsigned int>(size,getSizeOfInBuf());
         written=min<unsigned int>(size,getSizeOfBuf());
-        //SharedMemory::instance().copyBytesTo(IRQgetInBuf(),data,written);
         SharedMemory::instance().copyBytesTo(IRQgetData().epNumber,data,written,0);
         epr.IRQsetTxDataSize(written);
         epr.IRQsetTxStatus(RegisterStatus::VALID);
@@ -88,17 +85,11 @@ bool EndpointImpl::write(const unsigned char *data, int size, int& written)
         IRQincBufferCount();
         if(epr.IRQgetDtogRx()) //Actually, SW_BUF
         {
-            //written=min<unsigned int>(size,IRQgetSizeOfBuf1());
-            //written=min<unsigned int>(size,getSizeOfOutBuf());
             written=min<unsigned int>(size,getSizeOfBuf());
-            //SharedMemory::instance().copyBytesTo(IRQgetBuf1(),data,written);
             SharedMemory::instance().copyBytesTo(IRQgetData().epNumber,data,written,1);
             epr.IRQsetTxDataSize1(written);
         } else {
-            //written=min<unsigned int>(size,IRQgetSizeOfBuf0());
-            //written=min<unsigned int>(size,getSizeOfOutBuf());
             written=min<unsigned int>(size,getSizeOfBuf());
-            //SharedMemory::instance().copyBytesTo(IRQgetBuf0(),data,written);
             SharedMemory::instance().copyBytesTo(IRQgetData().epNumber,data,written,0);
             epr.IRQsetTxDataSize0(written);
         }
@@ -132,7 +123,6 @@ bool EndpointImpl::read(unsigned char *data, int& readBytes)
         //INTERRUPT
         if(stat!=RegisterStatus::NAK) return true; //No errors, just no data
         readBytes=epr.IRQgetReceivedBytes();
-        //SharedMemory::instance().copyBytesFrom(data,IRQgetOutBuf(),readBytes);
         SharedMemory::instance().copyBytesFrom(data,IRQgetData().epNumber,readBytes,1);
         epr.IRQsetRxStatus(RegisterStatus::VALID);
     } else {
@@ -142,11 +132,9 @@ bool EndpointImpl::read(unsigned char *data, int& readBytes)
         if(epr.IRQgetDtogTx()) //Actually, SW_BUF
         {
             readBytes=epr.IRQgetReceivedBytes1();
-            //SharedMemory::instance().copyBytesFrom(data,IRQgetBuf1(),readBytes);
             SharedMemory::instance().copyBytesFrom(data,IRQgetData().epNumber,readBytes,1);
         } else {
             readBytes=epr.IRQgetReceivedBytes0();
-            //SharedMemory::instance().copyBytesFrom(data,IRQgetBuf0(),readBytes);
             SharedMemory::instance().copyBytesFrom(data,IRQgetData().epNumber,readBytes,0);
         }
         epr.IRQtoggleDtogTx();
@@ -182,16 +170,12 @@ void EndpointImpl::IRQconfigureInterruptEndpoint(const unsigned char *desc)
         USB->endpoint[addr].IRQsetDtogTx(false);
         USB->endpoint[addr].IRQsetTxBuffer(ptr,0);
         USB->endpoint[addr].IRQsetTxStatus(RegisterStatus::NAK);
-        //this->buf0=ptr;
-        //this->size0=wMaxPacketSize;
         this->data.enabledIn=1;
     } else {
         //OUT endpoint
         USB->endpoint[addr].IRQsetDtogRx(false);
         USB->endpoint[addr].IRQsetRxBuffer(ptr,wMaxPacketSize);
         USB->endpoint[addr].IRQsetRxStatus(RegisterStatus::VALID);
-        //this->buf1=ptr;
-        //this->size1=wMaxPacketSize;
         this->data.enabledOut=1;
     }
 }
@@ -212,10 +196,6 @@ void EndpointImpl::IRQconfigureBulkEndpoint(const unsigned char *desc)
     }
 
     this->data.type=Descriptor::BULK;
-    //this->buf0=ptr0;
-    //this->size0=wMaxPacketSize;
-    //this->buf1=ptr1;
-    //this->size1=wMaxPacketSize;
     this->bufSize=wMaxPacketSize;
 
     USB->endpoint[addr].IRQsetType(RegisterType::BULK);

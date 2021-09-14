@@ -27,17 +27,11 @@ private:
      * Note: change these to reflect the hardware set up.
      */
     #ifdef _MIOSIX
-    typedef miosix::Gpio<GPIOA_BASE,8> sof;        //USB SOF
-    typedef miosix::Gpio<GPIOA_BASE,9> vbus;        //USB vbus
-    typedef miosix::Gpio<GPIOA_BASE,10> id;        //USB ID
     typedef miosix::Gpio<GPIOA_BASE,11> dm;         //USB d-
     typedef miosix::Gpio<GPIOA_BASE,12> dp;         //USB d+
-    // typedef miosix::Gpio<GPIOB_BASE,14> disconnect; //USB disconnect //FIXME -> seems it doesn't exist for this board
     #else //_MIOSIX
-    typedef miosix::Gpio<GPIOA_BASE,9> vbus;        //USB vbus
     typedef Gpio<GPIOA_BASE,11> dm;         //USB d-
     typedef Gpio<GPIOA_BASE,12> dp;         //USB d+
-    // typedef Gpio<GPIOB_BASE,14> disconnect; //USB disconnect
     #endif //_MIOSIX
 
 public:
@@ -54,45 +48,13 @@ public:
         // Enable port A of GPIO. It includes leds, vbus, dp and dm.
         RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN;
 
-        // //alternate function
-        // GPIOA->MODER |= GPIO_MODER_MODER8_1 | GPIO_MODER_MODER9_1 | GPIO_MODER_MODER10_1
-        //                     | GPIO_MODER_MODER11_1 | GPIO_MODER_MODER12_1;
-        // GPIOA->MODER &= ~(GPIO_MODER_MODER8_0 | GPIO_MODER_MODER9_0 | GPIO_MODER_MODER10_0
-        //                     | GPIO_MODER_MODER11_0 | GPIO_MODER_MODER12_0);
-
-        // GPIOA->OTYPER &= ~(GPIO_OTYPER_OT_8 | GPIO_OTYPER_OT_11 | GPIO_OTYPER_OT_12);
-        // GPIOA->OTYPER |= GPIO_OTYPER_OT_9 | GPIO_OTYPER_OT_10;
-
-        // GPIOA->PUPDR &= ~(GPIO_PUPDR_PUPDR8 | GPIO_PUPDR_PUPDR9 | GPIO_PUPDR_PUPDR11 | GPIO_PUPDR_PUPDR12);
-        // GPIOA->PUPDR |= GPIO_PUPDR_PUPDR10_0;
-        // GPIOA->PUPDR &= ~GPIO_PUPDR_PUPDR10_1;
-
-        // GPIOA->OSPEEDR |= GPIO_OSPEEDER_OSPEEDR8 | GPIO_OSPEEDER_OSPEEDR9 | GPIO_OSPEEDER_OSPEEDR10
-        //                     | GPIO_OSPEEDER_OSPEEDR11 | GPIO_OSPEEDER_OSPEEDR12;
-
-        // GPIOA->AFR[1] = 0x000AAAAA;
-
-        // sof::mode(Mode::ALTERNATE);
-        // sof::speed(Speed::_100MHz);
-
         dm::mode(Mode::ALTERNATE);
         dm::speed(Speed::_100MHz);
+        dm::alternateFunction(10);
 
         dp::mode(Mode::ALTERNATE);
         dp::speed(Speed::_100MHz);
-
-
-        // vbus::mode(Mode::ALTERNATE_OD);
-        // vbus::speed(Speed::_100MHz);
-
-        // id::mode(Mode::ALTERNATE_OD);
-        // id::speed(Speed::_100MHz);
-
-        // sof::alternateFunction(10);
-        dm::alternateFunction(10);
         dp::alternateFunction(10);
-        // vbus::alternateFunction(10);
-        // id::alternateFunction(10);
     }
 
     /**
@@ -102,7 +64,9 @@ public:
      */
     void enablePullup()
     {
-        // disconnect::low();
+        // NOTE: empty method
+        // not implemented in F4 driver because the pullup resistor
+        // is handled internally by the USB peripheral
     }
 
     /**
@@ -112,7 +76,9 @@ public:
      */
     void disablePullup()
     {
-        // disconnect::high();
+        // NOTE: empty method
+        // not implemented in F4 driver because the pullup resistor
+        // is handled internally by the USB peripheral
     }
 };
 

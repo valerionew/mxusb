@@ -1,9 +1,6 @@
 #ifndef STM32F1XX_PERIPHERAL_H
 #define	STM32F1XX_PERIPHERAL_H
 
-#include "drivers/stm32f1xx/stm32f1xx_memory.h"
-#include "drivers/stm32f1xx/stm32f1xx_enums.h"
-
 #ifdef _MIOSIX
 #include "interfaces/arch_registers.h"
 #include "interfaces/delays.h"
@@ -13,6 +10,7 @@ using namespace miosix;
 #endif //_MIOSIX
 
 #include "usb_peripheral.h"
+#include "drivers/stm32f1xx/stm32f1xx_memory.h"
 
 #ifdef _BOARD_STM32F103C8_BREAKOUT
 

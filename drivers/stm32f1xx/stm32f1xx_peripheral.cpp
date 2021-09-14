@@ -18,7 +18,6 @@ using namespace miosix;
  * Low priority interrupt, called for everything except double buffered
  * bulk/isochronous correct transfers.
  */
-//extern void USB_LP_CAN1_RX0_IRQHandler() __attribute__((naked));
 void __attribute__((naked)) USB_LP_CAN1_RX0_IRQHandler()
 {
     #ifdef _MIOSIX
@@ -38,7 +37,6 @@ void __attribute__((naked)) USB_LP_CAN1_RX0_IRQHandler()
  * High priority interrupt, called for a correct transfer on double bufferes
  * bulk/isochronous endpoint.
  */
-//extern void USB_HP_CAN1_TX_IRQHandler() __attribute__((naked));
 void __attribute__((naked)) USB_HP_CAN1_TX_IRQHandler()
 {
     #ifdef _MIOSIX
