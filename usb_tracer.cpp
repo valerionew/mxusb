@@ -63,9 +63,9 @@ void Tracer::runQueue(void *argv)
     } 
 }
 
-void Tracer::log(void (*func)())
+void Tracer::log(const char *log)
 {
-    logqueue.IRQpost(func);
+    logqueue.IRQpost([=]() { printf("%s\n", log); });
 }
 
 void Tracer::shutdown()

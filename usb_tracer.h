@@ -156,7 +156,7 @@ public:
     /**
      * Enqueue a log that will be processed on a different thread
      */
-    static void log(void (*func)());
+    static void log(const char *log);
 
     #else //MXUSB_ENABLE_TRACE
     //Do nothing stubs
@@ -168,7 +168,7 @@ public:
     static void IRQtraceArray(Ut::TracePoint, unsigned char *, int) {}
     static void IRQtraceEPnR(unsigned short reg) {}
     static void runLogQueue() {}
-    static void log(void (*func)()) {};
+    static void log(const char *log) {};
     #endif //MXUSB_ENABLE_TRACE
 private:
     Tracer();
