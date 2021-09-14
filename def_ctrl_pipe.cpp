@@ -206,6 +206,10 @@ void DefCtrlPipe::IRQin()
 void DefCtrlPipe::IRQout()
 {
     Tracer::IRQtrace(Ut::EP0_OUT_IRQ);
+
+    //Copy packet into struct
+    const unsigned short received=USBperipheral::instance().ep0read(controlState.ptr);
+
     switch(controlState.state)
     {
         case CTR_IN_STATUS_END:
@@ -216,7 +220,7 @@ void DefCtrlPipe::IRQout()
             Tracer::IRQtrace(Ut::EP0_STATUS_IN);
             break;
         case CTR_CUSTOM_OUT_IN_PROGRESS:
-            IRQstartCustomOutData();
+            IRQstartCustomOutData(received);
             break;
         case CTR_IN_IN_PROGRESS:
         case CTR_IN_STATUS_BEGIN:
@@ -441,9 +445,8 @@ void DefCtrlPipe::IRQstartInData(const unsigned char* data, unsigned short size)
     IRQsetEp0RxValid();
 }
 
-void DefCtrlPipe::IRQstartCustomOutData()
+void DefCtrlPipe::IRQstartCustomOutData(unsigned short received)
 {
-    const unsigned short received=USBperipheral::instance().ep0read(controlState.ptr);
     Tracer::IRQtrace(Ut::OUT_BUF_READ,0,received);
 
     if(received>controlState.size)

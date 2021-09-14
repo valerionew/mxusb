@@ -236,7 +236,7 @@ private:
      * Do not use for standard OUT requests, as at the end it calls the
      * custom OUT callback.
      */
-    static void IRQstartCustomOutData();
+    static void IRQstartCustomOutData(unsigned short received);
 
     static const unsigned char *deviceDesc; ///<Pointer to device descriptor
     static const unsigned char * const * configDesc; ///<Array of config desc
