@@ -7,9 +7,9 @@
 #endif //MXUSB_LIBRARY
 
 #include "usb.h"
-#include "drivers/stm32f1xx/stm32f1xx_peripheral.h"
 #include "device_state.h"
 #include "endpoint_base_impl.h"
+#include "drivers/stm32f1xx/stm32f1xx_config.h"
 
 #ifdef _BOARD_STM32F103C8_BREAKOUT
 

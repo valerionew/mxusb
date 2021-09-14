@@ -9,4 +9,8 @@
 #include "drivers/stm32f1xx/stm32f1xx_enums.h"
 #include "drivers/stm32f4xx/stm32f4xx_enums.h"
 
+// drivers endpoints
+#include "drivers/stm32f1xx/stm32f1xx_endpoint.h"
+#include "drivers/stm32f4xx/stm32f4xx_endpoint.h"
+
 #endif // USB_HAL_INCLUDE_H

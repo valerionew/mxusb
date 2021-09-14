@@ -7,9 +7,9 @@
 #endif //MXUSB_LIBRARY
 
 #include "usb.h"
-#include "drivers/stm32f4xx/stm32f4xx_peripheral.h"
 #include "device_state.h"
 #include "endpoint_base_impl.h"
+#include "drivers/stm32f4xx/stm32f4xx_config.h"
 
 #ifdef _BOARD_STM32F4DISCOVERY
 

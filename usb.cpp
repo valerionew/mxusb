@@ -30,9 +30,7 @@
 #include "shared_memory.h"
 #include "def_ctrl_pipe.h"
 #include "usb_tracer.h"
-//FIXME: include should be implementation independent
-#include "drivers/stm32f1xx/stm32f1xx_endpoint.h"
-#include "drivers/stm32f4xx/stm32f4xx_endpoint.h"
+#include "usb_hal_include.h"
 #include "usb_gpio.h"
 #include <config/usb_config.h>
 #include <algorithm>

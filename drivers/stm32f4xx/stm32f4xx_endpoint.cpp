@@ -5,6 +5,7 @@
 #include "usb_tracer.h"
 #include "usb_util.h"
 #include "shared_memory.h"
+#include "drivers/stm32f4xx/stm32f4xx_peripheral.h"
 #include <algorithm>
 
 using namespace std;

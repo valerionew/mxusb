@@ -31,9 +31,8 @@
 #endif //MXUSB_LIBRARY
 
 #include <config/usb_config.h>
+#include "stm32f4xx_config.h"
 #include "shared_memory.h"
-
-#include "usb_hal_include.h"
 
 #ifndef STM32F4XX_MEMORY_H
 #define	STM32F4XX_MEMORY_H
