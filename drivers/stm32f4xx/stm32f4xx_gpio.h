@@ -3,8 +3,6 @@
 
 #ifdef _BOARD_STM32F4DISCOVERY
 
-#define USB_GPIO_VERSION 100
-
 #ifdef _MIOSIX
 #include "interfaces/gpio.h"
 #else //_MIOSIX

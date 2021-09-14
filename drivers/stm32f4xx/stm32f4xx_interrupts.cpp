@@ -63,7 +63,7 @@ static void IRQhandleReset()
     USB_OTG_FS->GRSTCTL |= USB_OTG_GRSTCTL_TXFFLSH;
     while(((USB_OTG_FS->GRSTCTL) & (USB_OTG_GRSTCTL_TXFFLSH)) != 0) ;
 
-    Tracer::logqueue.IRQpost([=]() { printf(">>[int] end reset\n"); });
+    Tracer::log([=]() { printf(">>[int] end reset\n"); });
 }
 
 /**
@@ -72,7 +72,7 @@ static void IRQhandleReset()
  */
 static void IRQhandleEnumDone()
 {
-    Tracer::logqueue.IRQpost([=]() { printf(">>[int] enum done\n"); });
+    Tracer::log([=]() { printf(">>[int] enum done\n"); });
 
     USB_OTG_FS->GINTSTS = USB_OTG_GINTSTS_ENUMDNE; //Clear interrupt flag
 
@@ -81,7 +81,7 @@ static void IRQhandleEnumDone()
     //Device is now in the default address state
     DeviceStateImpl::IRQsetState(USBdevice::DEFAULT);
 
-    Tracer::logqueue.IRQpost([=]() { printf(">>[int] end enum done\n"); });
+    Tracer::log([=]() { printf(">>[int] end enum done\n"); });
 }
 
 /**
@@ -117,7 +117,7 @@ void USBirqHandler()
         switch ((pop & USB_OTG_GRXSTSP_PKTSTS) >> 17) {
             case 0x02: // OUT data packet received
             {
-                Tracer::logqueue.IRQpost([=]() { printf(">>[int] rxflvl: out data packet, ep:%d\n",epNum); });
+                Tracer::log([=]() { printf(">>[int] rxflvl: out data packet, ep:%d\n",epNum); });
                 if (epNum == 0) {
                     // handle OUT data packet on ep0
                     DefCtrlPipe::IRQstatusNak();
@@ -137,11 +137,11 @@ void USBirqHandler()
             case 0x03: // OUT transfer completed
                 break;
             case 0x04: // SETUP transaction completed
-                Tracer::logqueue.IRQpost([=]() { printf(">>[int] rxflvl: out/setup completed, ep:%d\n",epNum); });
+                Tracer::log([=]() { printf(">>[int] rxflvl: out/setup completed, ep:%d\n",epNum); });
                 EP_OUT(epNum)->DOEPCTL |= USB_OTG_DOEPCTL_CNAK | USB_OTG_DOEPCTL_EPENA;
                 break;
             case 0x06: // SETUP data packet received
-                Tracer::logqueue.IRQpost([=]() { printf(">>[int] rxflvl: setup packet, ep:%d\n",epNum); });
+                Tracer::log([=]() { printf(">>[int] rxflvl: setup packet, ep:%d\n",epNum); });
                 DefCtrlPipe::IRQstatusNak();
                 DefCtrlPipe::IRQsetup();
                 DefCtrlPipe::IRQrestoreStatus();
@@ -169,7 +169,7 @@ void USBirqHandler()
                 if (EP_IN(epNum)->DIEPINT & USB_OTG_DIEPINT_XFRC) {
                     EP_IN(epNum)->DIEPINT = USB_OTG_DIEPINT_XFRC; // Clear interrupt flag
 
-                    Tracer::logqueue.IRQpost([=]() { printf(">>[int] iepint: in data packet, ep:%d\n",epNum); });
+                    Tracer::log([=]() { printf(">>[int] iepint: in data packet, ep:%d\n",epNum); });
 
                     if (epNum == 0) {
                         // handle IN data packet on ep0

@@ -33,10 +33,8 @@
 #include <config/usb_config.h>
 
 #ifdef MXUSB_ENABLE_TRACE
-// TODO: for debugging, remove
 #include <functional>
 #include "e20/e20.h"
-
 #include "miosix.h"
 #endif //MXUSB_ENABLE_TRACE
 
@@ -150,7 +148,16 @@ public:
      */
     static void IRQtraceEPnR(unsigned short reg);
 
-    static void createQueueThread();
+    /**
+     * Create and run the thread that handles the log queue
+     */
+    static void runLogQueue();
+
+    /**
+     * Enqueue a log that will be processed on a different thread
+     */
+    template<typename F>
+    static void log(F func);
 
     #else //MXUSB_ENABLE_TRACE
     //Do nothing stubs
@@ -161,14 +168,10 @@ public:
     static void IRQtrace(Ut::TracePoint, unsigned char, unsigned char) {}
     static void IRQtraceArray(Ut::TracePoint, unsigned char *, int) {}
     static void IRQtraceEPnR(unsigned short reg) {}
-    static void createQueueThread() {}
+    static void runLogQueue() {}
+    template<typename F>
+    static void log(F func) {};
     #endif //MXUSB_ENABLE_TRACE
-
-    // TODO: for debugging, remove
-    #ifdef MXUSB_ENABLE_TRACE
-    static miosix::FixedEventQueue<100,12> logqueue;
-    #endif //MXUSB_ENABLE_TRACE
-    static void runQueue(void *argv);
 private:
     Tracer();
 
@@ -223,8 +226,14 @@ private:
      */
     static void dumpEPnR();
 
+    /**
+     * Handle and process the log queue
+     */
+    static void runQueue(void *argv);
+
     #ifdef MXUSB_ENABLE_TRACE
     static miosix::Queue<unsigned char,QUEUE_SIZE> queue;
+    static miosix::FixedEventQueue<100,12> logqueue;
     static volatile bool error; //True in case of queue overflow
     static miosix::Thread *printer;
     #endif //MXUSB_ENABLE_TRACE

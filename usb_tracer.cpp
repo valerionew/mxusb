@@ -48,18 +48,12 @@ void Tracer::init()
     error=false;
     queue.reset();
     printer=Thread::create(printerThread,2048,1,0,Thread::JOINABLE);
-
-    // TODO: for debugging, remove
-    // Thread::create(runQueue,2048,1,0,Thread::DEFAULT);
-
 }
 
-void Tracer::createQueueThread() {
-    // TODO: for debugging, remove
+void Tracer::runLogQueue() {
     Thread::create(runQueue,2048,1,0,Thread::DEFAULT);
 }
 
-// TODO: for debugging, remove
 void Tracer::runQueue(void *argv)
 {
     while (1) {
@@ -67,6 +61,12 @@ void Tracer::runQueue(void *argv)
         logqueue.runOne();
         printf("2\n");
     } 
+}
+
+template<typename F>
+void Tracer::log(F func)
+{
+    logqueue.IRQpost(func);
 }
 
 void Tracer::shutdown()
@@ -314,11 +314,9 @@ void Tracer::dumpEPnR()
 }
 
 miosix::Queue<unsigned char,QUEUE_SIZE> Tracer::queue;
+miosix::FixedEventQueue<100,12> Tracer::logqueue;
 volatile bool Tracer::error; //True in case of queue overflow
 miosix::Thread *Tracer::printer=0;
-
-// TODO: for debugging, remove
-miosix::FixedEventQueue<100,12> Tracer::logqueue;
 
 } //namespace mxusb
 

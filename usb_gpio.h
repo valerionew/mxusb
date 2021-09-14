@@ -35,6 +35,8 @@
 #ifndef USB_GPIO_H
 #define	USB_GPIO_H
 
+#define USB_GPIO_VERSION 100
+
 namespace mxusb {
 
 class USBgpioImpl;
