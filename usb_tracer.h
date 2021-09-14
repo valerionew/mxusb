@@ -156,8 +156,7 @@ public:
     /**
      * Enqueue a log that will be processed on a different thread
      */
-    template<typename F>
-    static void log(F func);
+    static void log(void (*func)());
 
     #else //MXUSB_ENABLE_TRACE
     //Do nothing stubs
@@ -169,8 +168,7 @@ public:
     static void IRQtraceArray(Ut::TracePoint, unsigned char *, int) {}
     static void IRQtraceEPnR(unsigned short reg) {}
     static void runLogQueue() {}
-    template<typename F>
-    static void log(F func) {};
+    static void log(void (*func)()) {};
     #endif //MXUSB_ENABLE_TRACE
 private:
     Tracer();

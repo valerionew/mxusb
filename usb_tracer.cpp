@@ -63,8 +63,7 @@ void Tracer::runQueue(void *argv)
     } 
 }
 
-template<typename F>
-void Tracer::log(F func)
+void Tracer::log(void (*func)())
 {
     logqueue.IRQpost(func);
 }
