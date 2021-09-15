@@ -57,11 +57,11 @@ const unsigned short EP0_SIZE=32;
 /// This spawns a background thread which prints debug data.<br>
 /// Since data is printed in a thread, the time needed to print does not cause
 /// interrupt latency.
-#define MXUSB_ENABLE_TRACE
+//#define MXUSB_ENABLE_TRACE
 
 /// Enable printing also TracePoints tagged as verbose.<br>
 /// Useful for debugging enumeration issues.
-#define MXUSB_PRINT_VERBOSE
+//#define MXUSB_PRINT_VERBOSE
 
 /// Size of buffer used to move data from the interrupt routine to the
 /// printing thread.
