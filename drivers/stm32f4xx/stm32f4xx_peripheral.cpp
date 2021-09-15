@@ -56,24 +56,14 @@ void USBperipheralImpl::configureInterrupts()
 
 bool USBperipheralImpl::enable()
 {
-    iprintf("Inside enable\n");
     power_on();
-    iprintf("Power on finished\n");
-
-    iprintf("Periph base: %lux\n", USB_OTG_FS_PERIPH_BASE);
-    iprintf("Device base: %lux\n", USB_OTG_DEVICE_BASE);
-    iprintf("sum: %lux\n", USB_OTG_FS_PERIPH_BASE+USB_OTG_DEVICE_BASE);
-    iprintf("access: %lu\n", USB_OTG_DEVICE);
-    iprintf("access: %lu\n", &(USB_OTG_DEVICE->DCFG));
     
     core_initialization();
-    iprintf("Core initialization finished\n");
 
     // Current mode of operation == device
     if ((USB_OTG_FS->GINTSTS & USB_OTG_GINTSTS_CMOD) == 0)
     {
         device_initialization();
-        iprintf("Device initialization finished\n");
         return true;
         // After that, the endpoint initialization must be done at the USB reset signal.
     }
@@ -104,8 +94,6 @@ void USBperipheralImpl::core_initialization()
     // Only TxFIFO empty level is programmed, as the Periodic TxFIFO empty level is only accessed in host mode
     USB_OTG_FS->GAHBCFG |= USB_OTG_GAHBCFG_TXFELVL;
 
-    printf("GAHBCFG: 0x%x\n", USB_OTG_FS->GAHBCFG);
-
     // FIELDS IN OTG_FS_GUSBCFG
     // Peripheral only mode forced and then wait for the change to take effect (it takes at least 25 ms).
     // I think it is better to proceed only in a known state. An other solution could have been to avoid checking if the device mode is active, as we already forced it.
@@ -118,13 +106,9 @@ void USBperipheralImpl::core_initialization()
     USB_OTG_FS->GUSBCFG |= 5; // TOCAL value = 5
     USB_OTG_FS->GUSBCFG |= 15<<10; // TRDT value = 15
 
-    printf("GUSBCFG: 0x%x\n", USB_OTG_FS->GUSBCFG);
-
     // FIELDS IN OTG_FS_GINTMSK
     // OTG interrupt mask and mode mismatch interrupt mask
     USB_OTG_FS->GINTMSK |= USB_OTG_GINTMSK_OTGINT | USB_OTG_GINTMSK_MMISM;
-
-    printf("GINTMSK: 0x%x\n", USB_OTG_FS->GINTMSK);
 }
 
 void USBperipheralImpl::device_initialization()
@@ -132,8 +116,6 @@ void USBperipheralImpl::device_initialization()
     // FIELDS IN OTG_FS_DCFG
     // Device speed set at full speed and non-zero-length status  OUT handshake
     USB_OTG_DEVICE->DCFG |= USB_OTG_DCFG_DSPD;
-
-    printf("DCFG: 0x%x\n", USB_OTG_DEVICE->DCFG);
     
     // Clear pending interrupts
     USB_OTG_FS->GINTSTS = 0xFFFFFFFF;
@@ -148,8 +130,6 @@ void USBperipheralImpl::device_initialization()
     // Switch on full-speed transceiver module of PHY.
     // ST switch on power using the bit "power down", very weird and tricky...
     USB_OTG_FS->GCCFG |= USB_OTG_GCCFG_PWRDWN;
-
-    printf("GCCFG: 0x%x\n", USB_OTG_FS->GCCFG);
 }
 
 void USBperipheralImpl::reset()

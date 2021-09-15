@@ -94,7 +94,6 @@ void SharedMemoryImpl::copyBytesFrom(unsigned char *dest, unsigned char ep, unsi
     //Pop data from fifo
     uint32_t len = (USB_OTG_FS->GRXSTSP & USB_OTG_GRXSTSP_BCNT) >> 4;
     uint32_t tmp;
-    // FIXME: improve logic and transform byte count to word count
     for (int idx = 0; idx < len; idx++) {
         if ((idx & 0x03) == 0x00) {
             tmp = *fifo;
@@ -115,7 +114,6 @@ void SharedMemoryImpl::copyBytesTo(unsigned char ep, const unsigned char *src, u
     //Push data to fifo
     uint32_t len = (n + 0x03) >> 2;
     uint32_t tmp = 0;
-    // FIXME: improve logic and transform byte count to word count
     for (int idx = 0; idx < n; idx++) {
         tmp |= (uint32_t)((uint8_t*)src)[idx] << ((idx & 0x03) << 3);
         if ((idx & 0x03) == 0x03 || (idx+1) == n) {

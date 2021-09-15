@@ -257,7 +257,6 @@ bool USBdevice::enable(const unsigned char *device,
     
     //Configure gpio for USB pullup
     USBgpio::instance().init();
-    iprintf("Init finished\n");
     
     //Enable clock to USB peripheral
     if (!USBperipheral::instance().enable()) {
@@ -284,6 +283,7 @@ bool USBdevice::enable(const unsigned char *device,
     __enable_irq();
     #endif //_MIOSIX
 
+    // run the thread that handles the Tracer logging queue
     Tracer::runLogQueue();
 
     return true;

@@ -57,15 +57,13 @@ void Tracer::runLogQueue() {
 void Tracer::runQueue(void *argv)
 {
     while (1) {
-        printf("1\n");
         logqueue.runOne();
-        printf("2\n");
     } 
 }
 
 void Tracer::log(const char *log)
 {
-    logqueue.IRQpost([=]() { printf("%s\n", log); });
+    logqueue.IRQpost([=]() { iprintf("%s\n", log); });
 }
 
 void Tracer::shutdown()
