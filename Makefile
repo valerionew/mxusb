@@ -29,6 +29,12 @@ drivers/stm32f4xx/stm32f4xx_interrupts.cpp								   \
 drivers/stm32f4xx/stm32f4xx_memory.cpp									   \
 drivers/stm32f4xx/stm32f4xx_peripheral.cpp
 
+# TODO: register the source files for the new hal
+#drivers/new_hal/new_hal_endpoint.cpp
+#drivers/new_hal/new_hal_interrupts.cpp
+#drivers/new_hal/new_hal_memory.cpp
+#drivers/new_hal/new_hal_peripheral.cpp
+
 ifeq ("$(VERBOSE)","1")
 Q := 
 ECHO := @true

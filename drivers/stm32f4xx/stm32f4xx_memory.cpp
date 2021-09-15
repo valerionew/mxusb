@@ -112,7 +112,6 @@ void SharedMemoryImpl::copyBytesTo(unsigned char ep, const unsigned char *src, u
     volatile uint32_t *fifo = FIFO(ep);
     
     //Push data to fifo
-    uint32_t len = (n + 0x03) >> 2;
     uint32_t tmp = 0;
     for (int idx = 0; idx < n; idx++) {
         tmp |= (uint32_t)((uint8_t*)src)[idx] << ((idx & 0x03) << 3);
