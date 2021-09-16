@@ -129,13 +129,13 @@ void USBperipheralImpl::ep0reset()
 void USBperipheralImpl::ep0beginStatusTransaction()
 {
     // NOTE: empty method
-    // implemented in F1 driver
+    // currently implemented only in the F1 driver
 }
 
 void USBperipheralImpl::ep0endStatusTransaction()
 {
     // NOTE: empty method
-    // implemented in F1 driver
+    // currently implemented only in the F1 driver
 }
 
 bool USBperipheralImpl::ep0write(int size, const unsigned char *data)

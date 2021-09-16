@@ -69,7 +69,6 @@ namespace mxusb {
 
 void USBperipheralImpl::setAddress(unsigned short addr)
 {
-    // USB->DADDR = addr;
     USB_OTG_DEVICE->DCFG &= ~(USB_OTG_DCFG_DAD);
     USB_OTG_DEVICE->DCFG |= (addr << 4) & USB_OTG_DCFG_DAD;
 }

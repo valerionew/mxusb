@@ -55,28 +55,72 @@ namespace mxusb {
 class USBperipheralImpl : public USBperipheral
 {
 public:
+
+    /**
+     * \brief It set the address of the peripheral.
+     * \param addr it's the address to set.
+     */
     void setAddress(unsigned short addr);
 
+    /**
+     * \brief It configures the interrupts of the peripheral.
+     */
     void configureInterrupts();
 
+    /**
+     * \brief It enables the USB peripheral.
+     */
     bool enable();
 
+    /**
+     * \brief It resets the peripheral and clears all the interrupts
+     */
     void reset();
 
+    /**
+     * \brief It resets the peripheral and power down the device
+     */
     void disable();
 
+    /**
+     * \brief It sets the status of the transmit endpoint 0.
+     * \param status is the status to set.
+     */
     void ep0setTxStatus(RegisterStatus status);
 
+    /**
+     * \brief It sets the status of the receive endpoint 0.
+     * \param status is the status to set.
+     */
     void ep0setRxStatus(RegisterStatus status);
 
+    /**
+     * \brief It reads from endpoint 0.
+     * \param size it's the size to read.
+     * \param data is the pointer where to store the data read.
+     */
     unsigned short ep0read(unsigned char *data, int size = 0);
 
+    /**
+     * \brief It resets the endpoint 0.
+     */
     void ep0reset();
 
+    /**
+     * \brief Begins a status transaction on the ep0 (currently implemented only in the F1 driver).
+     */
     void ep0beginStatusTransaction();
 
+    /**
+     * \brief Ends a status transaction on the ep0 (currently implemented only in the F1 driver).
+     */
     void ep0endStatusTransaction();
 
+    /**
+     * \brief This method writes to the endpoint0.
+     * \param size it's the size to write.
+     * \param data is the pointer to the data to write.
+     */
     bool ep0write(int size, const unsigned char *data = nullptr);
 };
 

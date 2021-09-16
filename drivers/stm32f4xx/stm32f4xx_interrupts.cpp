@@ -153,7 +153,6 @@ void USBirqHandler()
                 break;
             }
             case 0x03: // OUT transfer completed
-                break;
             case 0x04: // SETUP transaction completed
                 Tracer::log(">>[int] rxflvl: out/setup completed");
                 EP_OUT(epNum)->DOEPCTL |= USB_OTG_DOEPCTL_CNAK | USB_OTG_DOEPCTL_EPENA;

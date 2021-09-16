@@ -45,17 +45,6 @@ namespace mxusb {
  * \internal
  * This class handles the memory area in stm32 microcontrollers that acts as a
  * dual-port RAM between the USB peripheral and the microcontroller.
- * This memory is used:
- * - to allocate the btable, the table with information about descriptors used
- *   by the USB peripheral
- * - to allocate the endpoint buffers
- *
- * The way this memory is handled is this:
- * - the btable is statically allocated at the bottom, with BTABLE_SIZE size
- * - then, the two buffer for endpoint 0 are statically allocated, with EP0_SIZE
- * - the rest of the memory is dynamically allocated ondemand when other
- *   endpoints are created. This memory cannot be deallocated, and is freed only
- *   when the USB device is reset or when device configuration is changed.
  */
 class SharedMemoryImpl : public SharedMemory
 {

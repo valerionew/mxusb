@@ -71,7 +71,7 @@ static void IRQhandleReset()
 void USBirqHandler() __attribute__ ((noinline));
 void USBirqHandler()
 {
-    //unsigned long status = INTERRUPT_FLAGS_REGISTER;
+    //unsigned long status = INTERRUPT_FLAGS_REGISTER; // TODO: read interrupts register
     Callbacks *callbacks = Callbacks::IRQgetCallbacks();
 
     /*if (status & USB_RESET_FLAG)
@@ -84,10 +84,54 @@ void USBirqHandler()
     else if (status & USB_OUT_TRANSACTION_COMPLETED_FLAG)
     {
         // TODO: add here implementation of OUT transaction completed interrupt handler
+
+        unsigned char epNum = 0; // TODO: read ep number
+
+        if (OUT_DATA_PACKET_RECEIVED) {
+            // TODO: OUT data packet received
+
+            Tracer::log(">>[int] rxflvl: out data packet");
+            if (epNum == 0) {
+                // handle OUT data packet on ep0
+                DefCtrlPipe::IRQstatusNak();
+                DefCtrlPipe::IRQout();
+                DefCtrlPipe::IRQrestoreStatus();
+            }
+            else {
+                // handle OUT data packet on other eps
+                EndpointImpl *epi = EndpointImpl::IRQget(epNum);
+                callbacks->IRQendpoint(epNum,Endpoint::OUT);
+                epi->IRQwakeWaitingThreadOnOutEndpoint();
+            }
+        }
+        else if (SETUP_DATA_PACKET_RECEIVED) {
+            // TODO: SETUP data packet received
+
+            Tracer::log(">>[int] rxflvl: setup packet");
+            DefCtrlPipe::IRQstatusNak();
+            DefCtrlPipe::IRQsetup();
+            DefCtrlPipe::IRQrestoreStatus();
+        }
     }
     else if (status & USB_IN_TRANSACTION_COMPLETED_FLAG)
     {
         // TODO: add here implementation of IN transaction completed interrupt handler
+
+        int epNum = 0; // TODO: read ep number
+
+        Tracer::log(">>[int] iepint: in data packet");
+        if (epNum == 0) {
+            // handle IN data packet on ep0
+            DefCtrlPipe::IRQstatusNak();
+            DefCtrlPipe::IRQin();
+            DefCtrlPipe::IRQrestoreStatus();
+        }
+        else {
+            // handle IN data packet on other eps
+            EndpointImpl *epi = EndpointImpl::IRQget(epNum);
+            callbacks->IRQendpoint(epNum,Endpoint::IN);
+            epi->IRQwakeWaitingThreadOnInEndpoint();
+        }
     }
     else if (status & USB_SUSPEND_FLAG)
     {

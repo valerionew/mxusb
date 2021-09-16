@@ -45,11 +45,6 @@ using namespace miosix;
 
 namespace mxusb {
 
-/**
- * Note: bitmask for Descriptor::Type (bitmask used in standard USB
- * descriptors) differ from Endpoint::Type (bitmask used in stm32's EPnR
- * register bits for endpoint types)
- */
 enum RegisterType
 {
     CONTROL=0,
@@ -70,4 +65,4 @@ enum RegisterStatus
 
 #endif //_BOARD_STM32F4DISCOVERY
 
-#endif //STM32F1XX_ENUMS_H
+#endif //STM32F4XX_ENUMS_H

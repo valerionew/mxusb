@@ -73,8 +73,14 @@ public:
      */
     static const int maxNumEndpoints();
 
+    /**
+     * Deconfigures all the endpoints (except for the ep0)
+     */
     static void deconfigureAll();
     
+    /**
+     * Configures all the endpoints (except for the ep0)
+     */
     static void configureAll(const unsigned char *desc);
 
     /**

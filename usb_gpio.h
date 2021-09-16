@@ -39,6 +39,13 @@ namespace mxusb {
 
 class USBgpioImpl;
 
+/**
+ * This class provides support for configuring USB GPIO pins, in particular
+ * the pin connected to a 1.5K pullup to signal to the host that a device is
+ * present. It might need to be adapted to match the circuit schematic of
+ * the board used, since the GPIO that can be used for this purpose is not
+ * unique.
+ */
 class USBgpio
 {
 public:
@@ -46,8 +53,24 @@ public:
 
     USBgpio() {}
 
+    /**
+     * \internal
+     * Initializes USB related GPIOs
+     */
     void init();
+
+    /**
+     * \internal
+     * Enable 1.5K pullup resistor, to signal to the host that a devce has
+     * been connected.
+     */
     void enablePullup();
+
+    /**
+     * \internal
+     * Disable the 1.5K pullup resistor, to signal to the host that the device
+     * has been disconnected.
+     */
     void disablePullup();
 
 private:

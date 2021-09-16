@@ -37,6 +37,12 @@
 
 namespace mxusb {
 
+/**
+ * \internal
+ * Implemenation class for Endpoint facade class.
+ * It contains all what should be accessible from within the mxusb library,
+ * but not accessible by user code.
+ */
 class EndpointBaseImpl
 {
 public:
@@ -149,8 +155,21 @@ public:
      */
     void IRQconfigure(const unsigned char *desc, int numEndpoints);
 
+    /**
+     * Write data to a buffer in the shared memory and starts the IN transaction. Endpoint IN side must be enabled.
+     * \param data data to write
+     * \param size size of data to write
+     * \param written number of bytes actually written
+     * \return false in case of errors, or if the host suspended/reconfigured the device
+     */
     virtual bool write(const unsigned char *data, int size, int& written) = 0;
 
+    /**
+     * Read data from an a buffer in the shared memory. Endpoint OUT side must be enabled.
+     * \param data buffer where read data is stored
+     * \param readBytes number of bytes actually read
+     * \return false in case of errors, or if the host suspended/reconfigured the device
+     */
     virtual bool read(unsigned char *data, int& readBytes) = 0;
 
 private:

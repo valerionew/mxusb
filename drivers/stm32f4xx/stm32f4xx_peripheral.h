@@ -89,7 +89,7 @@ public:
     bool enable();
 
     /**
-     * \brief It resets the periferal and clears all the interrupts
+     * \brief It resets the peripheral and clears all the interrupts
      */
     void reset();
 

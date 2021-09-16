@@ -114,26 +114,19 @@ public:
      * If n is an odd number, dest should be larger than n by at least one.
      * This is because for speed reasons this function might write one byte
      * more when n is odd.
-     * \param src "pointer" into the shared memory, as returned by allocate()
-     * Pointer must be two bytes aligned. Assuming for example that
-     * result=allocate(n) was called, result, result+2, result+4 ..,
-     * result+n-2 are valid pointers
+     * \param ep is the index of the endpoint from which copying data.
      * \param n number of bytes to transfer
+     * \param idx is the index of the buffer and it is used only when the peripheral supports double buffer
      */
     void copyBytesFrom(unsigned char *dest, unsigned char ep, unsigned short n, unsigned char idx = 0);
     
 
     /**
      * Copy data from RAM to the shared memory
-     * \param dest "pointer" into the shared memory, as returned by allocate()
-     * Pointer must be two bytes aligned. Assuming for example that
-     * result=allocate(n) was called, result, result+2, result+4 ..,
-     * result+n-2 are valid pointers.<br>
-     * Note: if n is an odd number, then due to hardware limitations on
-     * byte accessibility of the shared memory, one byte past the input
-     * buffer size will be copied to the shared memory.
+     * \param ep is the index of the endpoint to which copying data.
      * \param src pointer to a normal buffer already allocated in RAM
      * \param n number of bytes to transfer
+     * \param idx is the index of the buffer and it is used only when the peripheral supports double buffer
      */
     void copyBytesTo(unsigned char ep, const unsigned char *src, unsigned short n, unsigned char idx = 0);
 
