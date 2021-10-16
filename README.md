@@ -8,7 +8,7 @@ Design and Implementation
 
 The design, implementation and the reasoning behind the project are explained in details inside the [project report](Project_report/Project_report_Morandini-Giacomini.pdf).
 
-We also explained how could be developed further implementations of the protocol.
+We also explained how further implementations of the protocol could be developed.
 
 [course]: https://www4.ceda.polimi.it/manifesti/manifesti/controller/ManifestoPublic.do?EVN_DETTAGLIO_RIGA_MANIFESTO=evento&aa=2020&k_cf=225&k_corso_la=481&k_indir=T2A&codDescr=095907&lang=IT&semestre=1&idGruppo=4151&idRiga=253828
 [author-1]: https://github.com/lucamora
