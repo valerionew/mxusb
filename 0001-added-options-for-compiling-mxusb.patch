@@ -1,0 +1,40 @@
+From 06b56b4f4ee05d5c8e05514caf497b7135f930e4 Mon Sep 17 00:00:00 2001
+From: valerionew <valerionappi995@gmail.com>
+Date: Wed, 17 Nov 2021 15:37:47 +0100
+Subject: [PATCH] added options for compiling mxusb
+
+---
+ Makefile | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 1f27908..974b9d4 100644
+--- a/Makefile
++++ b/Makefile
+@@ -13,7 +13,7 @@ include $(CONFPATH)/config/Makefile.inc
+ ##
+ ## List here subdirectories which contains makefiles
+ ##
+-SUBDIRS := $(KPATH)
++SUBDIRS := $(KPATH) mxusb
+ 
+ ##
+ ## List here your source files (both .s, .c and .cpp)
+@@ -24,12 +24,12 @@ main.cpp
+ ##
+ ## List here additional static libraries with relative path
+ ##
+-LIBS :=
++LIBS := mxusb/libmxusb.a
+ 
+ ##
+ ## List here additional include directories (in the form -Iinclude_dir)
+ ##
+-INCLUDE_DIRS :=
++INCLUDE_DIRS := -I./mxusb -I.
+ 
+ ##############################################################################
+ ## You should not need to modify anything below                             ##
+-- 
+2.25.1
+
